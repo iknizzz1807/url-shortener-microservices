@@ -10,13 +10,13 @@
 
 ### Ngày 1-2: M1 — url-service scaffold
 ```
-[ ] config.go — loadConfig từ env vars (DATABASE_URL, REDIS_URL, RABBITMQ_URL, JWT_SECRET, SHORT_URL_BASE, IP_HASH_SALT, PORT)
-[ ] db.go — NewDBPool (pgxpool, MaxConns=10, MinConns=2, ping 10s timeout, fatal khi fail)
-[ ] redis.go — NewRedisClient (parse URL, ping 3s timeout, NON-FATAL khi fail, return client+bool)
-[ ] rabbitmq.go — NewRabbitMQConn (exponential backoff, max 10 attempts, declare exchange "url-shortener" topic)
-[ ] health.go — GET /health -> 200 {"status":"ok","service":"url-service"} (pre-encoded JSON)
-[ ] main.go — wire config->db->redis->rabbitmq->mux->server, graceful shutdown SIGTERM/SIGINT
-[ ] Dockerfile, go.mod
+[X] config.go — loadConfig từ env vars (DATABASE_URL, REDIS_URL, RABBITMQ_URL, JWT_SECRET, SHORT_URL_BASE, IP_HASH_SALT, PORT)
+[X] db.go — NewDBPool (pgxpool, MaxConns=10, MinConns=2, ping 10s timeout, fatal khi fail)
+[X] redis.go — NewRedisClient (parse URL, ping 3s timeout, NON-FATAL khi fail, return client+bool)
+[X] rabbitmq.go — NewRabbitMQConn (exponential backoff, max 10 attempts, declare exchange "url-shortener" topic)
+[X] health.go — GET /health -> 200 {"status":"ok","service":"url-service"} (pre-encoded JSON)
+[X] main.go — wire config->db->redis->rabbitmq->mux->server, graceful shutdown SIGTERM/SIGINT
+[X] Dockerfile, go.mod
 ```
 
 Check: `docker compose up --build`, url-service healthy, /health -> 200

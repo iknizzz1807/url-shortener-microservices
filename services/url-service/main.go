@@ -1,26 +1,95 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"github.com/ikniz/url-shortener/services/url-service/internal/config"
+	"github.com/ikniz/url-shortener/services/url-service/internal/controller"
+	"github.com/ikniz/url-shortener/services/url-service/internal/platform"
 	"github.com/ikniz/url-shortener/shared/logger"
 )
 
+func routerSetup(mux *http.ServeMux, cfg *config.Config) {
+	mux.HandleFunc("GET /health", controller.NewHealthHandler(cfg.ServiceName))
+}
+
 func main() {
-	serviceName := "url-service"
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8080"
-	}
-
-	log := logger.New(serviceName)
-	mux := http.NewServeMux()
-	mux.HandleFunc("GET /health", NewHealthHandler(serviceName))
-
-	log.Info("server listening", "port", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil && err != http.ErrServerClosed {
-		log.Error("server error", "error", err)
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		logger.New("url-service").Error("config error", "error", err)
 		os.Exit(1)
 	}
+
+	log := logger.New(cfg.ServiceName)
+
+	// --- Database (fatal on failure) ---
+	dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer dbCancel()
+	pool, err := platform.NewDBPool(dbCtx, cfg.DatabaseURL, log)
+	if err != nil {
+		log.Error("failed to connect to database", "error", err)
+		os.Exit(1)
+	}
+	defer pool.Close()
+
+	// --- Redis (non-fatal on failure) ---
+	redisClient, redisOK := platform.NewRedisClient(context.Background(), cfg.RedisURL, log)
+	defer redisClient.Close()
+	if !redisOK {
+		log.Warn("starting without Redis cache; cache will be unavailable until Redis recovers")
+	}
+
+	// --- RabbitMQ (fatal after max retries) ---
+	rmqCtx, rmqCancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer rmqCancel()
+	rmqConn, err := platform.NewRabbitMQConn(rmqCtx, cfg.RabbitMQURL, log, 10)
+	if err != nil {
+		log.Error("failed to connect to RabbitMQ", "error", err)
+		os.Exit(1)
+	}
+	defer rmqConn.Close()
+
+	// --- HTTP mux ---
+	mux := http.NewServeMux()
+	routerSetup(mux, cfg)
+
+	// TODO (M3): register /shorten, /{code}, /urls, /urls/{code} handlers here
+
+	// --- HTTP Server ---
+	srv := &http.Server{
+		Addr:         ":" + cfg.Port,
+		Handler:      mux,
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  60 * time.Second,
+	}
+
+	// --- Graceful shutdown ---
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGTERM, syscall.SIGINT)
+
+	go func() {
+		log.Info("server listening", "port", cfg.Port)
+		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Error("server error", "error", err)
+			os.Exit(1)
+		}
+	}()
+
+	<-quit
+	log.Info("shutdown signal received, draining connections…")
+
+	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shutdownCancel()
+	if err := srv.Shutdown(shutdownCtx); err != nil {
+		log.Error("graceful shutdown failed", "error", err)
+	}
+
+	log.Info("server stopped cleanly")
 }
