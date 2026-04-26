@@ -15,12 +15,12 @@ import (
 )
 
 type HTTPError struct {
-	Status  int
-	Message string
+	Status int
+	Err    error
 }
 
 func (e *HTTPError) Error() string {
-	return e.Message
+	return e.Err.Error()
 }
 
 type RedirectInfo struct {
@@ -71,8 +71,8 @@ func (s *URLService) ShortenURL(ctx context.Context, url, userID, userEmail stri
 	// 2. Validate URL (from validate.go)
 	if err := ValidateURL(url); err != nil {
 		return ShortenResponse{}, &HTTPError{
-			Status:  http.StatusBadRequest,
-			Message: "invalid URL",
+			Status: http.StatusBadRequest,
+			Err:    ErrInvalidURL,
 		}
 	}
 
@@ -146,15 +146,15 @@ func (s *URLService) ShortenURL(ctx context.Context, url, userID, userEmail stri
 
 		// For any other database error, exit immediately
 		return ShortenResponse{}, &HTTPError{
-			Status:  http.StatusInternalServerError,
-			Message: "database error",
+			Status: http.StatusInternalServerError,
+			Err:    ErrDatabaseError,
 		}
 	}
 
 	if !success {
 		return ShortenResponse{}, &HTTPError{
-			Status:  http.StatusConflict,
-			Message: "unable to generate unique short code, try again later",
+			Status: http.StatusConflict,
+			Err:    ErrAlreadyExists,
 		}
 	}
 
@@ -188,14 +188,14 @@ func (s *URLService) RedirectToURL(ctx context.Context, shortCode string, remote
 		// Validate cached entry
 		if !cached.IsActive {
 			return nil, &HTTPError{
-				Status:  http.StatusGone,
-				Message: "URL has been deactivated",
+				Status: http.StatusGone,
+				Err:    ErrDeactivated,
 			}
 		}
 		if cached.ExpiresAt != nil && time.Now().After(*cached.ExpiresAt) {
 			return nil, &HTTPError{
-				Status:  http.StatusGone,
-				Message: "URL has expired",
+				Status: http.StatusGone,
+				Err:    ErrExpired,
 			}
 		}
 
@@ -210,13 +210,13 @@ func (s *URLService) RedirectToURL(ctx context.Context, shortCode string, remote
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &HTTPError{
-				Status:  http.StatusNotFound,
-				Message: "URL not found",
+				Status: http.StatusNotFound,
+				Err:    ErrNotFound,
 			}
 		} else {
 			return nil, &HTTPError{
-				Status:  http.StatusInternalServerError,
-				Message: "database error",
+				Status: http.StatusInternalServerError,
+				Err:    ErrDatabaseError,
 			}
 		}
 	}
@@ -224,14 +224,14 @@ func (s *URLService) RedirectToURL(ctx context.Context, shortCode string, remote
 	// Validate DB record
 	if !urlRecord.IsActive {
 		return nil, &HTTPError{
-			Status:  http.StatusGone,
-			Message: "URL has been deactivated",
+			Status: http.StatusGone,
+			Err:    ErrDeactivated,
 		}
 	}
 	if urlRecord.ExpiresAt != nil && time.Now().After(*urlRecord.ExpiresAt) {
 		return nil, &HTTPError{
-			Status:  http.StatusGone,
-			Message: "URL has expired",
+			Status: http.StatusGone,
+			Err:    ErrExpired,
 		}
 	}
 
@@ -264,13 +264,13 @@ func (s *URLService) GetUserUrls(ctx context.Context, userID, afterID string, li
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, &HTTPError{
-				Status:  http.StatusOK,
-				Message: "No URLs found for this user",
+				Status: http.StatusOK,
+				Err:    ErrNotFound,
 			}
 		}
 		return nil, &HTTPError{
-			Status:  http.StatusInternalServerError,
-			Message: "database error",
+			Status: http.StatusInternalServerError,
+			Err:    ErrDatabaseError,
 		}
 	}
 
@@ -324,13 +324,13 @@ func (s *URLService) DeactivateURL(ctx context.Context, shortCode, userID, userE
 		if errors.Is(err, pgx.ErrNoRows) {
 			// user_id didn't match, or shortcode doesn't exist/is already inactive -> 403
 			return &HTTPError{
-				Status:  http.StatusForbidden,
-				Message: "URL not found or you do not have permission",
+				Status: http.StatusForbidden,
+				Err:    ErrForbidden,
 			}
 		} else {
 			return &HTTPError{
-				Status:  http.StatusInternalServerError,
-				Message: "database error",
+				Status: http.StatusInternalServerError,
+				Err:    ErrDatabaseError,
 			}
 		}
 	}

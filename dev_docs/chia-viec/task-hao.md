@@ -100,10 +100,10 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
 
 ### Ngày 8-10: Hoàn thành M3
 ```
-[ ] errors.go — sentinel errors (ErrNotFound, ErrAlreadyExists, ErrForbidden, ErrExpired, ErrDeactivated)
+[X] errors.go — sentinel errors (ErrNotFound, ErrAlreadyExists, ErrForbidden, ErrExpired, ErrDeactivated)
     writeError(w, status, message) + writeJSON(w, status, data) helpers
 
-[ ] Mở rộng main.go — full wiring:
+[-X] Mở rộng main.go — full wiring:
     - runMigrations(ctx, pool)
     - Khởi tạo stores, cache, codegen, handler
     - Wire JWT middleware từ shared/auth

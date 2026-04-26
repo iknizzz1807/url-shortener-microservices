@@ -3,8 +3,6 @@ package main
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
-	"net/http"
 	"strings"
 )
 
@@ -20,16 +18,4 @@ func hashIP(ipAddr string) string {
 	data := []byte(host)
 	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:]) // Return hex string for easy storage/comparison
-}
-
-func writeError(w http.ResponseWriter, status int, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(map[string]string{"error": msg})
-}
-
-func writeJSON(w http.ResponseWriter, status int, data any) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
 }

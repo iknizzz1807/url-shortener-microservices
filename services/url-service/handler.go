@@ -64,7 +64,7 @@ func (h *HTTPHandler) HandleShorten(w http.ResponseWriter, r *http.Request) {
 
 	urlRecord, httpError := h.urlService.ShortenURL(r.Context(), req.URL, userID, userEmail, req.ExpiresInHours)
 	if httpError != nil {
-		writeError(w, httpError.Status, httpError.Message)
+		writeError(w, httpError.Status, httpError.Err.Error())
 		return
 	}
 
@@ -81,7 +81,7 @@ func (h *HTTPHandler) HandleRedirect(w http.ResponseWriter, r *http.Request) {
 
 	redirectInfo, httpError := h.urlService.RedirectToURL(r.Context(), shortcode, r.RemoteAddr)
 	if httpError != nil {
-		writeError(w, httpError.Status, httpError.Message)
+		writeError(w, httpError.Status, httpError.Err.Error())
 		return
 	}
 
@@ -102,7 +102,7 @@ func (h *HTTPHandler) HandleShortenAnon(w http.ResponseWriter, r *http.Request) 
 
 	urlRecord, httpError := h.urlService.ShortenURL(r.Context(), req.URL, uuid.NewString(), uuid.NewString(), req.ExpiresInHours)
 	if httpError != nil {
-		writeError(w, httpError.Status, httpError.Message)
+		writeError(w, httpError.Status, httpError.Err.Error())
 		return
 	}
 
@@ -119,7 +119,7 @@ func (h *HTTPHandler) HandleRedirectAnon(w http.ResponseWriter, r *http.Request)
 
 	redirectInfo, httpError := h.urlService.RedirectToURL(r.Context(), shortcode, r.RemoteAddr)
 	if httpError != nil {
-		writeError(w, httpError.Status, httpError.Message)
+		writeError(w, httpError.Status, httpError.Err.Error())
 		return
 	}
 
@@ -153,7 +153,7 @@ func (h *HTTPHandler) HandleGetUrls(w http.ResponseWriter, r *http.Request) {
 
 	urls, err := h.urlService.GetUserUrls(r.Context(), userID, afterID, limit)
 	if err != nil {
-		writeError(w, err.Status, err.Message)
+		writeError(w, err.Status, err.Err.Error())
 		return
 	}
 
@@ -183,7 +183,7 @@ func (h *HTTPHandler) HandleDeactivateUrl(w http.ResponseWriter, r *http.Request
 
 	err := h.urlService.DeactivateURL(r.Context(), shortcode, userID, userEmail)
 	if err != nil {
-		writeError(w, err.Status, err.Message)
+		writeError(w, err.Status, err.Err.Error())
 		return
 	}
 
