@@ -23,7 +23,7 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
 
 ### Ngày 3-5: Bắt đầu M3 sớm
 ```
-[ ] migration.sql:
+[X] migration.sql:
     - urls table: id UUID PK, short_code VARCHAR(10) UNIQUE NOT NULL, original_url TEXT NOT NULL,
       user_id UUID NOT NULL, created_at TIMESTAMPTZ DEFAULT now(), expires_at TIMESTAMPTZ NULL, is_active BOOLEAN DEFAULT true
     - outbox table: id UUID PK, event_type TEXT NOT NULL, payload JSONB NOT NULL,
@@ -32,17 +32,17 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
     - idx_urls_user_id_created (user_id, created_at DESC)
     - idx_outbox_unpublished (created_at ASC) WHERE published_at IS NULL
 
-[ ] base62.go — alphabet "0-9A-Za-z", Encode([]byte) string
-[ ] codegen.go — ShortCodeGenerator interface + cryptoRandGenerator (crypto/rand, big.Int mod 62^7)
+[X] base62.go — alphabet "0-9A-Za-z", Encode([]byte) string
+[X] codegen.go — ShortCodeGenerator interface + cryptoRandGenerator (crypto/rand, big.Int mod 62^7)
       KHÔNG DÙNG math/rand
 
-[ ] store.go (pgxURLStore):
+[X] store.go (pgxURLStore):
     - Insert(ctx, tx, record) error
     - FindByCode(ctx, shortCode) (*URLRecord, error) — check is_active + expires_at
     - FindByUserID(ctx, userID, afterID, limit) ([]URLRecord, error) — cursor pagination, newest-first
     - Deactivate(ctx, tx, shortCode, userID) error — set is_active=false, verify ownership
 
-[ ] validate.go — URL phải có scheme (http/https) + host. Reject empty, invalid scheme.
+[X] validate.go — URL phải có scheme (http/https) + host. Reject empty, invalid scheme.
 [ ] cache.go (RedisCache):
     - Get(ctx, code) (*CachedURL, error) — Redis GET với 50ms timeout, error -> return nil (non-fatal)
     - Set(ctx, code, cached, ttl) — TTL = min(expires_at - now, 1h). URL không có expiry -> 1h

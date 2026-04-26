@@ -9,18 +9,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ikniz/url-shortener/services/url-service/internal/config"
-	"github.com/ikniz/url-shortener/services/url-service/internal/controller"
-	"github.com/ikniz/url-shortener/services/url-service/internal/platform"
 	"github.com/ikniz/url-shortener/shared/logger"
 )
 
-func routerSetup(mux *http.ServeMux, cfg *config.Config) {
-	mux.HandleFunc("GET /health", controller.NewHealthHandler(cfg.ServiceName))
+func routerSetup(mux *http.ServeMux, cfg *Config) {
+	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
 }
 
 func main() {
-	cfg, err := config.LoadConfig()
+	cfg, err := LoadConfig()
 	if err != nil {
 		logger.New("url-service").Error("config error", "error", err)
 		os.Exit(1)
@@ -31,7 +28,7 @@ func main() {
 	// --- Database (fatal on failure) ---
 	dbCtx, dbCancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer dbCancel()
-	pool, err := platform.NewDBPool(dbCtx, cfg.DatabaseURL, log)
+	pool, err := NewDBPool(dbCtx, cfg.DatabaseURL, log)
 	if err != nil {
 		log.Error("failed to connect to database", "error", err)
 		os.Exit(1)
@@ -39,7 +36,7 @@ func main() {
 	defer pool.Close()
 
 	// --- Redis (non-fatal on failure) ---
-	redisClient, redisOK := platform.NewRedisClient(context.Background(), cfg.RedisURL, log)
+	redisClient, redisOK := NewRedisClient(context.Background(), cfg.RedisURL, log)
 	defer redisClient.Close()
 	if !redisOK {
 		log.Warn("starting without Redis cache; cache will be unavailable until Redis recovers")
@@ -48,7 +45,7 @@ func main() {
 	// --- RabbitMQ (fatal after max retries) ---
 	rmqCtx, rmqCancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer rmqCancel()
-	rmqConn, err := platform.NewRabbitMQConn(rmqCtx, cfg.RabbitMQURL, log, 10)
+	rmqConn, err := NewRabbitMQConn(rmqCtx, cfg.RabbitMQURL, log, 10)
 	if err != nil {
 		log.Error("failed to connect to RabbitMQ", "error", err)
 		os.Exit(1)
