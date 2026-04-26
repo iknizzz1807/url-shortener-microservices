@@ -43,7 +43,7 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
     - Deactivate(ctx, tx, shortCode, userID) error — set is_active=false, verify ownership
 
 [X] validate.go — URL phải có scheme (http/https) + host. Reject empty, invalid scheme.
-[ ] cache.go (RedisCache):
+[X] cache.go (RedisCache):
     - Get(ctx, code) (*CachedURL, error) — Redis GET với 50ms timeout, error -> return nil (non-fatal)
     - Set(ctx, code, cached, ttl) — TTL = min(expires_at - now, 1h). URL không có expiry -> 1h
     - Delete(ctx, code) — gọi ngay sau khi deactivate URL
@@ -52,13 +52,15 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
 
 ### Ngày 6-7: M3 handler + outbox_store
 ```
-[ ] outbox_store.go (pgxOutboxStore):
-    - InsertWithURL(ctx, tx, url, outbox) error — TRONG CÙNG TRANSACTION với URL insert
+[X] outbox_store.go (pgxOutboxStore):
+    - InsertWithURL(ctx, tx, url, outbox) error — TRONG CÙNG TRANSACTION với URL insert 
+    ^ Cái này không chắc lắm. Tại Handler sẽ gọi store insert URL, sau đó lại gọi outbox store insert event.?
+    Check lại!
     - InsertEvent(ctx, tx, outbox) error — cho DELETE (outbox event trong cùng tx với deactivate)
     - FetchUnpublished(ctx, limit) ([]*OutboxRecord, error) — SELECT ... FOR UPDATE SKIP LOCKED
     - MarkPublished(ctx, id) error — SET published_at = now()
 
-[ ] handler.go — POST /shorten:
+[X] handler.go — POST /shorten:
     1. Parse JSON body {url, expires_in_hours}
     2. Validate URL (scheme + host)
     3. Extract user claims từ JWT context (ClaimsFromContext)
@@ -67,7 +69,7 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
     6. Collision retry: nếu short_code UNIQUE violation -> generate lại, max 3 retries
     7. Return 201 {short_code, short_url, original_url, expires_at}
 
-[ ] handler.go — GET /{code}:
+[X] handler.go — GET /{code}:
     1. Redis GET (50ms timeout) -> hit: check is_active + expires_at
     2. Miss hoặc error: PostgreSQL FindByCode
     3. URL không tồn tại -> 404
@@ -79,13 +81,13 @@ Check: `docker compose up --build`, url-service healthy, /health -> 200
     8. Write outbox URLClickedEvent (ip_hash, user_agent, referer)
     9. Return 301 redirect
 
-[ ] handler.go — GET /urls:
+[] handler.go — GET /urls:
     1. JWT required, extract user_id
     2. Query param: ?after=<uuid>&limit=20
     3. FindByUserID cursor pagination
     4. Return 200 {urls: [...], next_cursor: "uuid"}
 
-[ ] handler.go — DELETE /urls/{code}:
+[X] handler.go — DELETE /urls/{code}:
     1. JWT required, extract user_id
     2. BEGIN tx -> Deactivate (check ownership, user_id không khớp -> 403) + Insert outbox (URLDeletedEvent, bao gồm user_email) -> COMMIT
     3. Redis Delete (invalidate cache ngay sau commit)

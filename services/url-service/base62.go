@@ -41,11 +41,3 @@ func Encode(n *big.Int) string {
 
 	return string(buf)
 }
-
-// Decode converts a base62 string back to a big.Int (used in tests for round-trip verification).
-func Decode(s string) (*big.Int, error) {
-	// Implementation for completeness, though mainly used in tests.
-	// Not required for the service logic itself.
-	// If you want, I can add it, but it's not strictly necessary for the main task.
-	return nil, nil
-}

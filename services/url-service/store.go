@@ -20,15 +20,6 @@ type URLRecord struct {
 	IsActive    bool
 }
 
-// OutboxRecord is the domain object mapped from the outbox table.
-type OutboxRecord struct {
-	ID          string // UUID string
-	EventType   string
-	Payload     []byte // raw JSONB bytes; sent as AMQP message body
-	CreatedAt   time.Time
-	PublishedAt *time.Time // nil if unpublished
-}
-
 type URLStore interface {
 	Insert(ctx context.Context, tx pgx.Tx, record *URLRecord) error
 	FindByCode(ctx context.Context, shortCode string) (*URLRecord, error)
@@ -68,16 +59,19 @@ func (s *pgxURLStore) FindByUserID(ctx context.Context, userID string, afterID s
 	var query string
 	var args []any
 
+	// Fetch limit + 1 to determine if there is a next page
+	fetchLimit := limit + 1
+
 	if afterID != "" {
 		query = `SELECT id, short_code, original_url, user_id, created_at, expires_at, is_active FROM urls 
 		WHERE user_id = $1 AND id < $2 AND is_active = true AND (expires_at IS NULL OR expires_at > NOW()) 
-		ORDER BY created_at DESC, id DESC LIMIT $3`
-		args = []any{userID, afterID, limit}
+		ORDER BY id DESC LIMIT $3`
+		args = []any{userID, afterID, fetchLimit}
 	} else {
 		query = `SELECT id, short_code, original_url, user_id, created_at, expires_at, is_active FROM urls 
 		WHERE user_id = $1 AND is_active = true AND (expires_at IS NULL OR expires_at > NOW())
-		ORDER BY created_at DESC, id DESC LIMIT $2`
-		args = []any{userID, limit}
+		ORDER BY id DESC LIMIT $2`
+		args = []any{userID, fetchLimit}
 	}
 
 	rows, err := s.pool.Query(ctx, query, args...)

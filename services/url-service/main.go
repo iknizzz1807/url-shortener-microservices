@@ -12,10 +12,6 @@ import (
 	"github.com/ikniz/url-shortener/shared/logger"
 )
 
-func routerSetup(mux *http.ServeMux, cfg *Config) {
-	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
-}
-
 func main() {
 	cfg, err := LoadConfig()
 	if err != nil {
@@ -52,11 +48,19 @@ func main() {
 	}
 	defer rmqConn.Close()
 
+	urlStore := NewURLStore(pool)
+	outboxStore := NewOutboxStore(pool)
+	cache := NewRedisCache(redisClient)
+	cgen := NewShortCodeGenerator()
+	handler := NewHTTPHandler(pool, urlStore, outboxStore, cache, cgen, cfg.ShortURLBase)
+
 	// --- HTTP mux ---
 	mux := http.NewServeMux()
-	routerSetup(mux, cfg)
-
-	// TODO (M3): register /shorten, /{code}, /urls, /urls/{code} handlers here
+	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
+	mux.HandleFunc("POST /shorten", handler.HandleShorten)
+	mux.HandleFunc("GET /{code}", handler.HandleRedirect)
+	mux.HandleFunc("GET /urls", handler.HandleGetUrls)
+	mux.HandleFunc("DELETE /urls/{code}", handler.HandleDeactivateUrl)
 
 	// --- HTTP Server ---
 	srv := &http.Server{
