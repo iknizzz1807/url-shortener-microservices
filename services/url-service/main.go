@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"net/http"
 	"os"
@@ -11,6 +12,9 @@ import (
 
 	"github.com/ikniz/url-shortener/shared/logger"
 )
+
+//go:embed migration.sql
+var migrationSQL string
 
 func main() {
 	cfg, err := LoadConfig()
@@ -30,6 +34,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer pool.Close()
+
+	// --- Database Migration ---
+	if _, err := pool.Exec(context.Background(), migrationSQL); err != nil {
+		log.Error("failed to run database migrations", "error", err)
+		os.Exit(1)
+	}
+	log.Info("database migrations applied successfully")
 
 	// --- Redis (non-fatal on failure) ---
 	redisClient, redisOK := NewRedisClient(context.Background(), cfg.RedisURL, log)
@@ -59,6 +70,8 @@ func main() {
 	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
 	mux.HandleFunc("POST /shorten", handler.HandleShorten)
 	mux.HandleFunc("GET /{code}", handler.HandleRedirect)
+	mux.HandleFunc("POST /shorten-anon", handler.HandleShortenAnon)
+	mux.HandleFunc("GET /redirect-anon/{code}", handler.HandleRedirectAnon)
 	mux.HandleFunc("GET /urls", handler.HandleGetUrls)
 	mux.HandleFunc("DELETE /urls/{code}", handler.HandleDeactivateUrl)
 
