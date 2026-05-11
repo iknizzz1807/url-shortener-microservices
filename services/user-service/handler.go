@@ -117,7 +117,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.store.FindByEmail(r.Context(), req.Email)
 	if user == nil {
-		_ = h.hasher.Verify("dummy-password-for-timing-safety", "$2a$12$0000000000000000000000uZLbwxnpY0o6Fh.za8VOf/OjIPFGXGhG")
+		_ = h.hasher.Verify(req.Password, "$2a$12$invalidhashfortimingsafetyonlyxx")
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}
