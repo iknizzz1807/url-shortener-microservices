@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: url-shortener
+data:
+  PORT: "8080"
+  SHORT_URL_BASE: http://localhost:30080/r
+  IP_HASH_SALT: change-this-in-production-random-salt
+  URL_SERVICE_URL: http://url-service:8080
+  ANALYTICS_SERVICE_URL: http://analytics-service:8080
+  USER_SERVICE_URL: http://user-service:8080
+  NOTIFICATION_SERVICE_URL: http://notification-service:8080
+  REDIS_URL: redis://redis:6379/0
+  RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
+  URL_DATABASE_URL: postgres://urluser:urlpass@url-db:5432/urldb?sslmode=disable
+  ANALYTICS_DATABASE_URL: postgres://analyticsuser:analyticspass@analytics-db:5432/analyticsdb?sslmode=disable
+  USER_DATABASE_URL: postgres://useruser:userpass@user-db:5432/userdb?sslmode=disable
+  NOTIFICATION_DATABASE_URL: postgres://notificationuser:notificationpass@notification-db:5432/notificationdb?sslmode=disable
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: url-shortener
+type: Opaque
+stringData:
+  JWT_SECRET: change-this-in-production-minimum-32-chars

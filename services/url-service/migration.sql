@@ -24,10 +24,15 @@ CREATE TABLE IF NOT EXISTS outbox (
     event_type   TEXT         NOT NULL,     -- routing key, e.g. "url.created"
     payload      JSONB        NOT NULL,     -- full event struct serialized
     created_at   TIMESTAMPTZ  NOT NULL DEFAULT now(),
+    locked_until TIMESTAMPTZ  NULL,         -- transient claim lease for multi-replica workers
     published_at TIMESTAMPTZ  NULL          -- NULL = unpublished; set by worker on success
 );
+ALTER TABLE outbox ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ NULL;
 -- Outbox poller index: fetch only unpublished rows, oldest first.
 -- Partial index omits published rows (WHERE published_at IS NULL) to stay small.
 CREATE INDEX IF NOT EXISTS idx_outbox_unpublished
     ON outbox(created_at ASC)
     WHERE published_at IS NULL;
+CREATE INDEX IF NOT EXISTS idx_outbox_unpublished_unlocked
+    ON outbox(created_at ASC)
+    WHERE published_at IS NULL AND locked_until IS NULL;

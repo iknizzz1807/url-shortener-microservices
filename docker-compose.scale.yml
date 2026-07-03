@@ -1,0 +1,23 @@
+# Optional local scale demo.
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.scale.yml up --build -d --scale url-service=3
+# Gateway still reaches url-service through Docker DNS at http://url-service:8080.
+services:
+  url_db:
+    ports: !reset []
+  analytics_db:
+    ports: !reset []
+  user_db:
+    ports: !reset []
+  notification_db:
+    ports: !reset []
+  rabbitmq:
+    ports: !reset []
+  redis:
+    ports: !reset []
+  url-service:
+    ports: !reset []
+  prometheus:
+    ports: !reset []
+  grafana:
+    ports: !reset []

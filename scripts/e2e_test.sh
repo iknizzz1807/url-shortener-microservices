@@ -6,7 +6,7 @@ EMAIL="thong-e2e-$(date +%s)@example.com"
 PASSWORD="Password123!"
 
 json_get() {
-  py -c 'import json,sys; data=json.load(sys.stdin); print(data'"$1"')'
+  python3 -c 'import json,sys; data=json.load(sys.stdin); print(data'"$1"')'
 }
 
 request() {
@@ -61,7 +61,7 @@ sleep 5
 
 echo "6. stats"
 request GET "/api/stats/${SHORT_CODE}" >/tmp/url-shortener-stats.json
-py - <<'PY'
+python3 - <<'PY'
 import json
 with open('/tmp/url-shortener-stats.json') as f:
     data = json.load(f)
@@ -71,13 +71,15 @@ PY
 
 echo "7. notifications"
 request GET /api/notifications "" "$TOKEN" >/tmp/url-shortener-notifications.json
-py - <<'PY'
+python3 - <<'PY'
 import json
 with open('/tmp/url-shortener-notifications.json') as f:
     data = json.load(f)
 items = data.get('notifications') or data.get('items') or []
 if not items:
     raise SystemExit('expected at least one notification')
+if not any(item.get('event_type') == 'milestone.reached' or (item.get('payload') or {}).get('event_type') == 'milestone.reached' for item in items):
+    raise SystemExit('expected milestone.reached notification')
 PY
 
 echo "8. delete"

@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 )
 
 type Handler struct {
@@ -55,8 +56,10 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	newReq := r.WithContext(context.WithValue(r.Context(), upstreamPathKey{}, upstreamPath))
 	if route.Upstream == "url-service" && h.circuitBreaker != nil {
+		start := time.Now()
 		if err := h.circuitBreaker.Do(r.Context(), func() error {
 			status, err := h.proxy.ServeHTTPStatus(w, newReq, route.Upstream)
+			h.recordUpstreamMetrics(route.Upstream, status, start)
 			if err != nil {
 				return err
 			}
@@ -66,6 +69,8 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return nil
 		}); err != nil {
 			if err == ErrCircuitOpen {
+				recordCBRejected(route.Upstream)
+				requestsTotal.WithLabelValues(route.Upstream, "circuit_open").Inc()
 				writeError(w, http.StatusServiceUnavailable, "url-service unavailable")
 			}
 			return
@@ -73,7 +78,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.proxy.ServeHTTP(w, newReq, route.Upstream)
+	start := time.Now()
+	status, _ := h.proxy.ServeHTTPStatus(w, newReq, route.Upstream)
+	h.recordUpstreamMetrics(route.Upstream, status, start)
 }
 
 func (h *Handler) checkRateLimit(r *http.Request, key string) (bool, int, error) {
@@ -97,4 +104,13 @@ func formatInt(n int) string {
 		n /= 10
 	}
 	return s
+}
+
+func (h *Handler) recordUpstreamMetrics(upstream string, status int, start time.Time) {
+	if status <= 0 {
+		status = http.StatusBadGateway
+	}
+	class := fmt.Sprintf("%dxx", status/100)
+	requestsTotal.WithLabelValues(upstream, class).Inc()
+	requestDuration.WithLabelValues(upstream).Observe(time.Since(start).Seconds())
 }

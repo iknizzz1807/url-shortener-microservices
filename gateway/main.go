@@ -40,7 +40,13 @@ func main() {
 		cfg.CircuitBreaker.MaxFailures,
 		time.Duration(cfg.CircuitBreaker.OpenTimeoutSecs)*time.Second,
 		time.Duration(cfg.CircuitBreaker.FailureWindowSecs)*time.Second,
-	)
+	).WithStateChange(func(from, to State) {
+		recordCBState("url-service", to)
+		if to == StateOpen {
+			recordCBTrip("url-service")
+		}
+	})
+	recordCBState("url-service", StateClosed)
 	handler := NewHandler(proxy, cfg, limiter, cb, log)
 
 	mux := http.NewServeMux()
