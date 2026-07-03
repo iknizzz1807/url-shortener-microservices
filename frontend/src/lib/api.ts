@@ -1,0 +1,15 @@
+export const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080';
+export type UserInfo={user_id:string;email:string};
+export type LoginResponse={token:string;expires_at:string};
+export type UrlRecord={ShortCode?:string;OriginalURL?:string;ExpiresAt?:string|null;IsActive?:boolean;CreatedAt?:string;short_code?:string;original_url?:string;expires_at?:string|null;is_active?:boolean;created_at?:string};
+export type StatsResponse={short_code:string;total_clicks:number;clicks_last_24h:number;clicks_last_7d:number;top_referers:{referer:string;count:number}[]};
+export type TimelineResponse={short_code:string;interval:'day'|'hour';points:{period:string;clicks:number}[]};
+export type NotificationRecord={id:string;event_type:string;payload:unknown;status:string;created_at:string;sent_at?:string|null};
+export class ApiError extends Error{status:number;constructor(status:number,message:string){super(message);this.status=status}}
+async function request<T>(path:string,options:RequestInit={},token?:string):Promise<T>{const headers=new Headers(options.headers);if(options.body&&!headers.has('Content-Type'))headers.set('Content-Type','application/json');if(token)headers.set('Authorization',`Bearer ${token}`);const res=await fetch(`${API_BASE}${path}`,{...options,headers});if(!res.ok){const body=await res.json().catch(()=>null) as {error?:string;message?:string}|null;throw new ApiError(res.status,body?.error??body?.message??`Request failed with status ${res.status}`)}if(res.status===204)return undefined as T;return res.json() as Promise<T>}
+export const api={register:(email:string,password:string)=>request('/api/auth/register',{method:'POST',body:JSON.stringify({email,password})}),login:(email:string,password:string)=>request<LoginResponse>('/api/auth/login',{method:'POST',body:JSON.stringify({email,password})}),me:(token:string)=>request<UserInfo>('/api/me',{},token),shorten:(token:string,url:string,expiresInHours:number)=>request<{short_code:string}>('/api/shorten',{method:'POST',body:JSON.stringify({url,expires_in_hours:expiresInHours})},token),urls:(token:string)=>request<{urls:UrlRecord[]}>('/api/urls?limit=50',{},token),deleteUrl:(token:string,code:string)=>request<void>(`/api/urls/${encodeURIComponent(code)}`,{method:'DELETE'},token),stats:(code:string)=>request<StatsResponse>(`/api/stats/${encodeURIComponent(code)}`),timeline:(code:string,interval:'day'|'hour')=>request<TimelineResponse>(`/api/stats/${encodeURIComponent(code)}/timeline?interval=${interval}`),notifications:(token:string)=>request<{notifications:NotificationRecord[]}>('/api/notifications?limit=50',{},token),health:()=>request<{status:string;service:string}>('/health')};
+export const codeOf=(u:UrlRecord)=>u.short_code??u.ShortCode??'';
+export const originalOf=(u:UrlRecord)=>u.original_url??u.OriginalURL??'';
+export const expiresOf=(u:UrlRecord)=>u.expires_at??u.ExpiresAt??null;
+export const activeOf=(u:UrlRecord)=>u.is_active??u.IsActive??true;
+export const shortUrl=(code:string)=>`${API_BASE}/r/${code}`;
