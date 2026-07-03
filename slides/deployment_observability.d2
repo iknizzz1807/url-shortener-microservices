@@ -1,0 +1,32 @@
+direction: down
+
+compose: "Docker Compose Stack" {style.fill: "#dbeafe"; style.stroke: "#2563eb"}
+
+infra: "Infrastructure containers" {
+  url_db: "url_db:5432" {shape: cylinder; style.fill: "#eff6ff"}
+  analytics_db: "analytics_db:5433" {shape: cylinder; style.fill: "#eff6ff"}
+  user_db: "user_db:5434" {shape: cylinder; style.fill: "#eff6ff"}
+  notification_db: "notification_db:5435" {shape: cylinder; style.fill: "#eff6ff"}
+  rabbit: "RabbitMQ\n5672 / 15672" {shape: queue; style.fill: "#fff7ed"}
+  redis: "Redis\n6379" {shape: cylinder; style.fill: "#f0fdf4"}
+}
+
+apps: "Application containers" {
+  gateway: "gateway:8080\n/health /metrics" {style.fill: "#dbeafe"; style.stroke: "#2563eb"}
+  url: "url-service:8081\n/health" {style.fill: "#dcfce7"; style.stroke: "#22c55e"}
+  analytics: "analytics-service:8082\n/health" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+  user: "user-service:8083\n/health" {style.fill: "#dcfce7"; style.stroke: "#10b981"}
+  notification: "notification-service:8084\n/health" {style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+}
+
+monitoring: "Monitoring" {
+  prometheus: "Prometheus:9090\nscrape 5s" {style.fill: "#eff6ff"; style.stroke: "#2563eb"}
+  grafana: "Grafana:3000\nCB dashboard" {style.fill: "#fff7ed"; style.stroke: "#f97316"}
+  k6: "k6 load test\n/r/{shortCode}" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+}
+
+compose -> infra: "start dependencies first"
+infra -> apps: "depends_on: service_healthy"
+apps.gateway -> monitoring.prometheus: "gateway metrics"
+monitoring.prometheus -> monitoring.grafana
+monitoring.k6 -> apps.gateway: "traffic + failure demo"
