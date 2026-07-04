@@ -245,6 +245,8 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8080
       REDIS_URL: redis://redis:6379/0
       JWT_SECRET: change-this-in-production-minimum-32-chars
+      SHORTEN_RATE_LIMIT: "100000"
+      REDIRECT_RATE_LIMIT: "100000"
       PORT: "8080"
     ports:
       - "8080:8080"

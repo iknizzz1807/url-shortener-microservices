@@ -593,10 +593,6 @@
             \end{claimbox}
         \end{column}
     \end{columns}
-    \vspace{0.5cm}
-    \begin{claimbox}{danger}
-        \small \textbf{Giới hạn triển khai hiện tại:} hệ thống hiện còn dùng secret mẫu, chưa hỗ trợ TLS, refresh token/revocation và RBAC/OAuth2 đầy đủ. Các nội dung này được xác định là hướng mở rộng production hardening.
-    \end{claimbox}
 \end{frame}
 
 \begin{frame}[shrink=5]{Phân tích kỹ thuật 1: giảm rủi ro timing attack khi login}
@@ -896,84 +892,6 @@
     \end{center}
 \end{frame}
 
-\begin{frame}{Observability: giám sát trạng thái vận hành hệ thống}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.50\textwidth}
-            \begin{claimbox}{primary}
-                \textbf{Signals đã có}
-                \begin{itemize}\small
-                    \item Structured JSON logs bằng \texttt{slog}.
-                    \item \texttt{X-Correlation-ID} xuyên gateway.
-                    \item Gateway metrics Prometheus.
-                    \item Grafana dashboard Circuit Breaker Monitor.
-                    \item Health endpoint cho từng service.
-                \end{itemize}
-            \end{claimbox}
-        \end{column}
-        \begin{column}{0.46\textwidth}
-            \begin{tikzpicture}[scale=0.72, transform shape]
-                \node[component, fill=primary!12, minimum width=4cm] (gw) at (0,2.0) {gateway /metrics};
-                \node[component, fill=secondary!12, minimum width=4cm] (prom) at (0,0.8) {Prometheus scrape 5s};
-                \node[component, fill=accent!14, minimum width=4cm] (graf) at (0,-0.4) {Grafana dashboard};
-                \node[component, fill=danger!10, minimum width=4cm] (ops) at (0,-1.6) {CB state, RPS, error rate};
-                \draw[arr] (gw)--(prom); \draw[arr] (prom)--(graf); \draw[arr] (graf)--(ops);
-            \end{tikzpicture}
-        \end{column}
-    \end{columns}
-\end{frame}
-
-\begin{frame}{Load testing: đánh giá khả năng chịu tải và circuit breaker}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.47\textwidth}
-            \begin{claimbox}{best}
-                \textbf{k6 scenario}
-                \begin{itemize}\small
-                    \item Start stack: \texttt{docker compose up -d --build}.
-                    \item Smoke test health bằng script.
-                    \item k6 tự register user, login, shorten URL.
-                    \item Load test endpoint nóng: \texttt{/r/\{shortCode\}}.
-                    \item Target script hướng tới 10,000 req/s.
-                \end{itemize}
-            \end{claimbox}
-        \end{column}
-        \begin{column}{0.49\textwidth}
-            \begin{claimbox}{danger}
-                \textbf{Kịch bản mô phỏng lỗi}
-                \begin{itemize}\small
-                    \item Trong lúc k6 chạy: \texttt{docker compose stop url-service}.
-                    \item Gateway nhận lỗi kết nối.
-                    \item Sau 5 lỗi/10s: CB \texttt{CLOSED -> OPEN}.
-                    \item OPEN: trả \texttt{503 circuit open} ngay, không gọi downstream.
-                    \item Start lại service, 30s sau probe \texttt{HALF\_OPEN}.
-                \end{itemize}
-            \end{claimbox}
-        \end{column}
-    \end{columns}
-\end{frame}
-
-\begin{frame}{Mục tiêu benchmark trong tài liệu thiết kế}
-    \scriptsize
-    \begin{center}
-    \begin{tabular}{>{\bfseries}p{0.28\textwidth}p{0.25\textwidth}p{0.34\textwidth}}
-        \toprule
-        Khu vực & Target & Ý nghĩa \\
-        \midrule
-        Redirect cache hit & p99 $<$ 5ms & Hot path phải gần như memory lookup \\
-        Redirect cache miss & p99 $<$ 20ms & DB fallback vẫn chấp nhận được \\
-        Shorten URL & p99 $<$ 50ms & Gồm validate, generate code, insert DB, outbox \\
-        Outbox publish latency & $<$ 5s & Eventual consistency có giới hạn \\
-        Gateway overhead & p99 $<$ 5ms & Gateway không trở thành bottleneck \\
-        Circuit OPEN reject & $<$ 1ms & Shed load nhanh khi downstream lỗi \\
-        Stats API & p99 $<$ 30ms & Analytics query có index và chạy song song \\
-        \bottomrule
-    \end{tabular}
-    \end{center}
-    \vspace{0.25cm}
-    \begin{claimbox}{accent}
-        \small Các giá trị trên là mục tiêu benchmark trong tài liệu thiết kế; kết quả thực tế phụ thuộc tài nguyên máy Docker khi chạy thử nghiệm.
-    \end{claimbox}
-\end{frame}
-
 \begin{frame}{Testing: kiểm chứng trên nhiều mức độ}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.32\textwidth}
@@ -999,35 +917,6 @@
     \begin{claimbox}{best}
         \small \textbf{Các case quan trọng:} JWT middleware, path rewrite, rate limit, circuit breaker state, invalid event ack/discard, analytics dedup, milestone unique, deleted URL trả 410.
     \end{claimbox}
-\end{frame}
-
-\begin{frame}{Các chi tiết kỹ thuật bổ sung}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.48\textwidth}
-            \begin{claimbox}{primary}
-                \begin{itemize}\small
-                    \item Có healthcheck từng service/container.
-                    \item Có cursor pagination cho URL và notification.
-                    \item Có clamp limit tối đa 100.
-                    \item Có ownership check khi delete URL.
-                    \item URL inactive/expired trả 410.
-                    \item Redis rate limit fail-open.
-                \end{itemize}
-            \end{claimbox}
-        \end{column}
-        \begin{column}{0.48\textwidth}
-            \begin{claimbox}{secondary}
-                \begin{itemize}\small
-                    \item Event contract đặt trong \texttt{shared/events}.
-                    \item JWT verifier kiểm tra thuật toán HMAC.
-                    \item Analytics dedup event id.
-                    \item Milestone 10/100/1000 chỉ tạo một lần.
-                    \item Logs có service name và correlation ID.
-                    \item RabbitMQ queue durable, exchange topic.
-                \end{itemize}
-            \end{claimbox}
-        \end{column}
-    \end{columns}
 \end{frame}
 
 \begin{frame}{Delivery Semantics: lựa chọn at-least-once}
