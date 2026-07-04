@@ -119,6 +119,22 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+  # ── Reverse Proxy ───────────────────────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - url-shortener
+    depends_on:
+      gateway:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    restart: unless-stopped
   # ── Application Services ─────────────────────────────────────────────────────
   url-service:
     build:
@@ -129,7 +145,7 @@ services:
       REDIS_URL: redis://redis:6379/0
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
       PORT: "8080"
-      SHORT_URL_BASE: http://sho.rt
+      SHORT_URL_BASE: ${SHORT_URL_BASE:-http://localhost/r}
       JWT_SECRET: change-this-in-production-minimum-32-chars
       IP_HASH_SALT: change-this-in-production-random-salt
     ports:
@@ -256,7 +272,7 @@ services:
       context: .
       dockerfile: frontend/Dockerfile
     environment:
-      VITE_API_BASE_URL: http://localhost:8080
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost}
     ports:
       - "5173:5173"
     networks:
