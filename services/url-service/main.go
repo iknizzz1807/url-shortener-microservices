@@ -53,7 +53,7 @@ func main() {
 		log.Warn("starting without Redis cache; cache will be unavailable until Redis recovers")
 	}
 
-	// RabbitMQ (fatal after max retries)
+	// RabbitMQ
 	rmqCtx, rmqCancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer rmqCancel()
 	rmqConn, err := NewRabbitMQConn(rmqCtx, cfg.RabbitMQURL, log, 10)
