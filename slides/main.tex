@@ -78,7 +78,7 @@
             \begin{claimbox}{accent}
                 \centering\large\textbf{Có vận hành}\par
                 \vspace{0.15cm}
-                \small Docker Compose, healthcheck, Prometheus, Grafana, smoke test, k6 load test.
+                \small Docker Compose, Kubernetes demo, healthcheck, Prometheus, Grafana, smoke test, k6 load test.
             \end{claimbox}
         \end{column}
     \end{columns}
@@ -139,7 +139,7 @@
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{best}
                 \textbf{Cách tiếp cận microservices}
-                \begin{itemize}\small
+                \begin{itemize}\scriptsize
                     \item Redirect là hot path, ưu tiên cache và latency.
                     \item Analytics/notification xử lý bất đồng bộ qua event.
                     \item Mỗi service sở hữu dữ liệu của mình.
@@ -225,7 +225,7 @@
         \begin{column}{0.50\textwidth}
             \begin{claimbox}{primary}
                 \textbf{Gateway làm ở edge}
-                \begin{itemize}\small
+                \begin{itemize}\scriptsize
                     \item Reverse proxy route theo path.
                     \item JWT validation cho route private.
                     \item Rate limit theo IP bằng Redis.
@@ -317,7 +317,7 @@
     \end{tikzpicture}
     \end{center}
     \begin{claimbox}{accent}
-        \small \textbf{Câu trả lời khi bị hỏi:} Redis mất thì hệ thống chậm hơn nhưng không mất dữ liệu; PostgreSQL vẫn là nguồn dữ liệu đúng duy nhất.
+        \small \textbf{Failure semantics:} Redis mất thì redirect fallback về PostgreSQL. Hệ thống chậm hơn nhưng không mất dữ liệu vì PostgreSQL vẫn là source of truth.
     \end{claimbox}
 \end{frame}
 
@@ -419,7 +419,7 @@
         \end{column}
         \begin{column}{0.51\textwidth}
             \begin{claimbox}{secondary}
-                \textbf{Điểm nhỏ nhưng nên kể}
+                \textbf{Operational details}
                 \begin{itemize}\small
                     \item Consumer không làm URL Service chậm.
                     \item Notification lưu trạng thái \texttt{pending}, \texttt{sent}, \texttt{sent\_at}.
@@ -455,7 +455,7 @@
     \end{columns}
     \vspace{0.5cm}
     \begin{claimbox}{danger}
-        \small \textbf{Nói thật khi bị hỏi production:} demo compose còn hard-code secrets, chưa TLS, chưa refresh token/revocation, chưa RBAC/OAuth2 đầy đủ. Đây là điểm mở rộng, không nên nói quá.
+        \small \textbf{Production gap:} demo hiện còn dùng secret mẫu, chưa TLS, chưa refresh token/revocation và chưa RBAC/OAuth2 đầy đủ. Các mục này được tách thành hướng hardening thay vì che giấu trong thiết kế.
     \end{claimbox}
 \end{frame}
 
@@ -513,7 +513,7 @@
     \end{columns}
     \vspace{0.35cm}
     \begin{claimbox}{primary}
-        \small \textbf{Cẩn thận khi nói:} Docker Compose hiện demo một replica; thiết kế cho horizontal scaling nhưng chưa triển khai Kubernetes/service discovery động.
+        \small \textbf{Horizontal scaling demo:} Docker Compose có overlay scale cho \texttt{url-service=3}; Kubernetes demo triển khai \texttt{url-service} 3 replicas và \texttt{gateway} 2 replicas qua Service discovery.
     \end{claimbox}
 \end{frame}
 
@@ -697,7 +697,7 @@
     \end{columns}
     \vspace{0.35cm}
     \begin{claimbox}{primary}
-        \small \textbf{Câu trả lời mẫu:} hệ thống chọn at-least-once delivery + idempotent consumer ở nơi quan trọng, thay vì tuyên bố exactly-once không thực tế.
+        \small \textbf{Delivery model:} hệ thống chọn at-least-once delivery kết hợp idempotent consumer ở nơi quan trọng, thay vì tuyên bố exactly-once không thực tế trong môi trường distributed system.
     \end{claimbox}
 \end{frame}
 
@@ -708,6 +708,7 @@
                 \textbf{Đã đủ cho đồ án}
                 \begin{itemize}\small
                     \item Local Docker Compose chạy toàn stack.
+                    \item Kubernetes demo cho kind/minikube.
                     \item Microservice boundary rõ.
                     \item Có cache, broker, DB riêng, metrics.
                     \item Có demo failure bằng circuit breaker.
@@ -718,7 +719,7 @@
             \begin{claimbox}{danger}
                 \textbf{Chưa production-ready hoàn toàn}
                 \begin{itemize}\small
-                    \item Chưa Kubernetes/service discovery động.
+                    \item K8s demo dùng local cluster, chưa production-grade managed cluster.
                     \item Chưa OpenTelemetry tracing/Jaeger.
                     \item Metrics chủ yếu ở gateway.
                     \item Secrets demo trong compose, chưa Vault/Secret Manager.
@@ -729,10 +730,10 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Roadmap nếu nâng lên production}
+\begin{frame}{Kubernetes Demo \& Production Roadmap}
     \begin{center}
     \begin{tikzpicture}[scale=0.74, transform shape]
-        \node[component, fill=primary!12, minimum width=2.5cm] (k8s) at (-5,1.2) {Kubernetes\scriptsize HPA, rolling update};
+        \node[component, fill=primary!12, minimum width=2.5cm] (k8s) at (-5,1.2) {K8s Demo\scriptsize kind/minikube};
         \node[component, fill=secondary!12, minimum width=2.5cm] (obs) at (-1.7,1.2) {OpenTelemetry\scriptsize tracing};
         \node[component, fill=accent!14, minimum width=2.5cm] (sec) at (1.7,1.2) {Secrets\scriptsize Vault/K8s Secret};
         \node[component, fill=best!12, minimum width=2.5cm] (ci) at (5,1.2) {CI/CD\scriptsize build, test, deploy};
@@ -744,7 +745,7 @@
     \end{center}
     \vspace{0.3cm}
     \begin{claimbox}{primary}
-        \small Roadmap này bám đúng đề cương: config/secrets, tracing, CI/CD, cloud/Kubernetes, contract test và self-healing.
+        \small Repo đã có manifest Kubernetes cho local demo: Namespace, ConfigMap, Secret, Deployments, Services, readiness probes, \texttt{url-service} 3 replicas, \texttt{gateway} 2 replicas và NodePort 30080. Roadmap production còn lại là HPA, Ingress/TLS, managed secrets, tracing và CI/CD.
     \end{claimbox}
 \end{frame}
 
@@ -975,7 +976,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Schema Design: chi tiết để tránh bị hỏi hổng}
+\begin{frame}{Schema Design: chi tiết data ownership}
     \scriptsize
     \begin{center}
     \begin{tabular}{>{\bfseries}p{0.18\textwidth}p{0.34\textwidth}p{0.38\textwidth}}
@@ -1024,7 +1025,36 @@
     \end{center}
 \end{frame}
 
-\begin{frame}{Docker Compose: thứ tự khởi động và healthcheck}
+\begin{frame}{Kubernetes manifests: service discovery và replicas}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{best}
+                \textbf{Ứng dụng stateless được scale}
+                \begin{itemize}\small
+                    \item Namespace riêng: \texttt{url-shortener}.
+                    \item \texttt{url-service}: \texttt{replicas: 3}.
+                    \item \texttt{gateway}: \texttt{replicas: 2}.
+                    \item Các service nội bộ dùng \texttt{ClusterIP}.
+                    \item Gateway expose qua \texttt{NodePort 30080}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{Config và readiness}
+                \begin{itemize}\small
+                    \item \texttt{ConfigMap}: service URLs, Redis/RabbitMQ URLs, DB DSNs.
+                    \item \texttt{Secret}: \texttt{JWT\_SECRET}.
+                    \item App readiness probe gọi \texttt{/health}.
+                    \item Infra readiness: \texttt{pg\_isready}, \texttt{redis-cli ping}, \texttt{rabbitmq-diagnostics ping}.
+                    \item E2E chạy qua gateway NodePort \texttt{30080}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Docker Compose \& Kubernetes: thứ tự khởi động và healthcheck}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{claimbox}{primary}
@@ -1131,7 +1161,7 @@
     \begin{center}
     \begin{tabular}{p{0.35\textwidth}p{0.55\textwidth}}
         \toprule
-        Câu hỏi khó & Câu trả lời nên dùng \\
+        Câu hỏi khó & Trả lời ngắn gọn \\
         \midrule
         Nếu RabbitMQ down lúc tạo URL? & URL và event vẫn nằm trong DB/outbox; worker publish lại khi broker phục hồi. \\
         Nếu consumer xử lý trùng event? & Analytics dedup bằng \texttt{processed\_events}; milestone có unique constraint. Notification duplicate là hạn chế đã nhận diện. \\
