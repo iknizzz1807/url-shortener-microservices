@@ -48,7 +48,7 @@
 
 \title[URL Shortener Microservices]{\textbf{URL Shortener Microservices}}
 \subtitle{Thiết kế, triển khai và vận hành hệ thống rút gọn URL theo kiến trúc Microservices}
-\author{Đồ án môn học SE361.Q21 \textemdash{} Phát triển phần mềm theo kiến trúc Microservices}
+\author{Phát triển Phần mềm theo Kiến trúc Microservices \textemdash{} SE361.Q21}
 \institute{University of Information Technology \textemdash{} VNU-HCM}
 \date{2026}
 
@@ -56,6 +56,67 @@
 
 \begin{frame}
     \titlepage
+\end{frame}
+
+\begin{frame}{Thông tin nhóm thực hiện}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.58\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{Thành viên nhóm}
+                \vspace{0.15cm}
+                \begin{tabular}{>{\bfseries}p{0.52\textwidth}p{0.28\textwidth}}
+                    Nguyễn Mỹ Thống & 23521527 \\
+                    Đặng Trần Anh Hào & 23520444 \\
+                    Trần Nam Phong & 23521172 \\
+                \end{tabular}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.38\textwidth}
+            \begin{claimbox}{secondary}
+                \textbf{Môn học \& lớp}\par
+                \small Phát triển Phần mềm theo Kiến trúc Microservices\par
+                \vspace{0.15cm}
+                \textbf{SE361.Q21}
+            \end{claimbox}
+            \begin{claimbox}{accent}
+                \textbf{Giảng viên hướng dẫn}\par
+                \small Đặng Việt Dũng
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Giới thiệu đề tài}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.46\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{Đề tài}\par
+                \vspace{0.15cm}
+                \small Xây dựng hệ thống rút gọn URL theo kiến trúc microservices, hỗ trợ xác thực người dùng, tạo short URL, redirect, thống kê click và thông báo sự kiện.
+            \end{claimbox}
+            \begin{claimbox}{secondary}
+                \textbf{Động lực}\par
+                \small Redirect là luồng đọc tần suất cao; analytics và notification là tác vụ phụ trợ cần tách khỏi request path chính.
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.50\textwidth}
+            \begin{tikzpicture}[scale=0.74, transform shape]
+                \node[component, fill=lightgray, minimum width=2.1cm] (long) at (-3,1.5) {Long URL};
+                \node[component, fill=primary!12, minimum width=2.1cm] (shorten) at (0,1.5) {Shorten};
+                \node[component, fill=best!12, minimum width=2.1cm] (short) at (3,1.5) {Short URL};
+                \node[component, fill=accent!14, minimum width=2.1cm] (stats) at (0,0) {Analytics};
+                \node[component, fill=danger!10, minimum width=2.1cm] (noti) at (3,0) {Notification};
+                \draw[arr] (long)--(shorten);
+                \draw[arr] (shorten)--(short);
+                \draw[dasharr] (short)--(stats);
+                \draw[dasharr] (stats)--(noti);
+            \end{tikzpicture}
+            \vspace{0.2cm}
+            \begin{claimbox}{accent}
+                \small Trọng tâm báo cáo là cách hệ thống hiện thực các nguyên lý microservices: bounded context, database-per-service, event-driven, resilience, observability và triển khai container/Kubernetes.
+            \end{claimbox}
+        \end{column}
+    \end{columns}
 \end{frame}
 
 \begin{frame}{Thông điệp chính}
@@ -156,6 +217,60 @@
     \end{center}
 \end{frame}
 
+\begin{frame}{Giao diện người dùng: luồng rút gọn và theo dõi URL}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.68\textwidth}
+            \begin{tcolorbox}[colback=lightgray, colframe=primary, boxrule=1pt, height=0.72\textheight, halign=center, valign=center]
+                \vspace{1.2cm}
+                \Large\textbf{Frontend Screenshot Placeholder}\par
+                \vspace{0.35cm}
+                \normalsize Chèn ảnh giao diện app tại đây\par
+                \vspace{0.2cm}
+                \small Gợi ý file: \texttt{frontend\_screenshot.png}
+            \end{tcolorbox}
+        \end{column}
+        \begin{column}{0.28\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{Luồng sản phẩm}
+                \begin{itemize}\small
+                    \item Đăng ký / đăng nhập.
+                    \item Rút gọn URL.
+                    \item Danh sách URL theo user.
+                    \item Redirect qua short code.
+                    \item Thống kê click và notification.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Từ monolith sang microservices: quyết định thiết kế}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.31\textwidth}
+            \begin{claimbox}{danger}
+                \centering\textbf{Monolith đơn giản}\par\small
+                Auth, shorten, redirect, analytics, notification cùng process và cùng DB. Thiết kế này đơn giản nhưng khó mở rộng và dễ cascading failure.
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.31\textwidth}
+            \begin{claimbox}{accent}
+                \centering\textbf{Tách service}\par\small
+                Tách bounded context theo nghiệp vụ, service sở hữu schema riêng, chỉ giao tiếp qua API/event.
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.31\textwidth}
+            \begin{claimbox}{best}
+                \centering\textbf{Vận hành được}\par\small
+                Gateway bảo vệ lớp biên, RabbitMQ hấp thụ tác vụ phụ trợ, Redis giảm tải luồng redirect, Prometheus/Grafana quan sát lỗi.
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+    \vspace{0.35cm}
+    \begin{claimbox}{primary}
+        \small \textbf{Luận điểm:} URL shortener là bài toán nhỏ nhưng có profile tải rất thực tế: redirect đọc nhiều, analytics ghi nhiều, notification là tác vụ phụ trợ; vì vậy việc tách service dựa trên nhu cầu kỹ thuật thay vì chỉ mang tính hình thức.
+    \end{claimbox}
+\end{frame}
+
 \begin{frame}{Tách Bounded Context}
     \begin{center}
     \begin{tikzpicture}[scale=0.76, transform shape]
@@ -218,6 +333,16 @@
         \draw[dasharr] (gw) -- (prom);
     \end{tikzpicture}
     \end{center}
+\end{frame}
+
+\begin{frame}{D2 Architecture Map: tổng quan hệ thống}
+    \begin{center}
+        \includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{architecture.pdf}
+    \end{center}
+    \vspace{-0.15cm}
+    \begin{claimbox}{primary}
+        \scriptsize Sơ đồ D2 thể hiện runtime boundary, data ownership và operations của hệ thống microservices.
+    \end{claimbox}
 \end{frame}
 
 \begin{frame}{API Gateway: cửa vào duy nhất}
@@ -298,6 +423,15 @@
     \end{columns}
 \end{frame}
 
+\begin{frame}{D2 Redirect Hot Path: luồng chịu tải cao nhất}
+    \begin{center}
+        \includegraphics[width=0.95\textwidth,height=0.76\textheight,keepaspectratio]{redirect_flow.pdf}
+    \end{center}
+    \begin{claimbox}{best}
+        \scriptsize Redirect không chờ analytics consumer. Click event được ghi bất đồng bộ; người dùng nhận redirect nhanh nhất có thể.
+    \end{claimbox}
+\end{frame}
+
 \begin{frame}{Redis: nhanh nhưng không phải source of truth}
     \begin{center}
     \begin{tikzpicture}[scale=0.75, transform shape]
@@ -344,6 +478,12 @@
     \begin{claimbox}{secondary}
         \small Event payload chứa đủ dữ liệu để consumer xử lý, giảm gọi ngược service khác. Đây là trade-off denormalization có chủ đích để giảm coupling.
     \end{claimbox}
+\end{frame}
+
+\begin{frame}{D2 Event Pipeline: Outbox + RabbitMQ + Consumers}
+    \begin{center}
+        \includegraphics[width=0.95\textwidth,height=0.77\textheight,keepaspectratio]{event_pipeline.pdf}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Outbox Pattern: đảm bảo lưu trữ event khi broker lỗi}
@@ -988,16 +1128,6 @@
     \end{center}
 \end{frame}
 
-\begin{frame}{D2 Architecture Map: tổng quan hệ thống}
-    \begin{center}
-        \includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{architecture.pdf}
-    \end{center}
-    \vspace{-0.15cm}
-    \begin{claimbox}{primary}
-        \scriptsize Sơ đồ D2 thể hiện runtime boundary, data ownership và operations của hệ thống microservices.
-    \end{claimbox}
-\end{frame}
-
 \begin{frame}{Rubric SE361: mapping từng tiêu chí vào dự án}
     \scriptsize
     \begin{center}
@@ -1017,31 +1147,14 @@
     \end{center}
 \end{frame}
 
-\begin{frame}{Từ monolith sang microservices: quyết định thiết kế}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.31\textwidth}
-            \begin{claimbox}{danger}
-                \centering\textbf{Monolith đơn giản}\par\small
-                Auth, shorten, redirect, analytics, notification cùng process và cùng DB. Thiết kế này đơn giản nhưng khó mở rộng và dễ cascading failure.
-            \end{claimbox}
-        \end{column}
-        \begin{column}{0.31\textwidth}
-            \begin{claimbox}{accent}
-                \centering\textbf{Tách service}\par\small
-                Tách bounded context theo nghiệp vụ, service sở hữu schema riêng, chỉ giao tiếp qua API/event.
-            \end{claimbox}
-        \end{column}
-        \begin{column}{0.31\textwidth}
-            \begin{claimbox}{best}
-                \centering\textbf{Vận hành được}\par\small
-                Gateway bảo vệ lớp biên, RabbitMQ hấp thụ tác vụ phụ trợ, Redis giảm tải luồng redirect, Prometheus/Grafana quan sát lỗi.
-            \end{claimbox}
-        \end{column}
-    \end{columns}
-    \vspace{0.35cm}
-    \begin{claimbox}{primary}
-        \small \textbf{Luận điểm:} URL shortener là bài toán nhỏ nhưng có profile tải rất thực tế: redirect đọc nhiều, analytics ghi nhiều, notification là tác vụ phụ trợ; vì vậy việc tách service dựa trên nhu cầu kỹ thuật thay vì chỉ mang tính hình thức.
-    \end{claimbox}
+\begin{frame}{Phần chi tiết triển khai}
+    \begin{center}
+        \begin{claimbox}[width=0.82\textwidth, halign=center]{primary}
+            \large\textbf{Từ kiến trúc tổng quan đến hiện thực code}\par
+            \vspace{0.25cm}
+            \small Các slide tiếp theo đi sâu vào service contract, cơ chế sinh short code, RabbitMQ topology, consistency, schema và deployment để chứng minh từng quyết định kiến trúc đã được hiện thực trong source code.
+        \end{claimbox}
+    \end{center}
 \end{frame}
 
 \begin{frame}{Service Contract: User Service}
@@ -1099,16 +1212,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{D2 Redirect Hot Path: nơi chịu tải cao nhất}
-    \begin{center}
-        \includegraphics[width=0.95\textwidth,height=0.76\textheight,keepaspectratio]{redirect_flow.pdf}
-    \end{center}
-    \begin{claimbox}{best}
-        \scriptsize Redirect không chờ analytics consumer. Click event được ghi bất đồng bộ; người dùng nhận redirect nhanh nhất có thể.
-    \end{claimbox}
-\end{frame}
-
-\begin{frame}{Short Code: nhỏ nhưng phải giải thích được}
+\begin{frame}{Short Code: thiết kế mã ngắn và xử lý collision}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.49\textwidth}
             \begin{claimbox}{primary}
@@ -1133,12 +1237,6 @@
             \end{claimbox}
         \end{column}
     \end{columns}
-\end{frame}
-
-\begin{frame}{D2 Event Pipeline: Outbox + RabbitMQ + Consumers}
-    \begin{center}
-        \includegraphics[width=0.95\textwidth,height=0.77\textheight,keepaspectratio]{event_pipeline.pdf}
-    \end{center}
 \end{frame}
 
 \begin{frame}{RabbitMQ Topology: topic exchange có chủ đích}
@@ -1300,7 +1398,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Prometheus metrics: không chỉ có log}
+\begin{frame}{Prometheus metrics: giám sát ngoài logging}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.52\textwidth}
             \begin{claimbox}{primary}
@@ -1322,6 +1420,32 @@
                     \item Requests/sec by status class.
                     \item Error Rate \%.
                     \item CB Trips total.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Grafana Dashboard: quan sát circuit breaker khi kiểm thử tải}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.68\textwidth}
+            \begin{tcolorbox}[colback=lightgray, colframe=accent, boxrule=1pt, height=0.72\textheight, halign=center, valign=center]
+                \vspace{1.2cm}
+                \Large\textbf{Grafana Dashboard Placeholder}\par
+                \vspace{0.35cm}
+                \normalsize Chèn ảnh dashboard Grafana tại đây\par
+                \vspace{0.2cm}
+                \small Gợi ý file: \texttt{grafana\_dashboard.png}
+            \end{tcolorbox}
+        \end{column}
+        \begin{column}{0.28\textwidth}
+            \begin{claimbox}{accent}
+                \textbf{Panels cần thể hiện}
+                \begin{itemize}\small
+                    \item Circuit breaker state.
+                    \item RPS theo status class.
+                    \item Error rate.
+                    \item CB trips / rejected requests.
                 \end{itemize}
             \end{claimbox}
         \end{column}
