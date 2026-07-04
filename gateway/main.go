@@ -54,8 +54,9 @@ func main() {
 	mux.Handle("GET /metrics", promhttp.Handler()) // Prometheus scrape endpoint
 	mux.Handle("/", jwtMiddleware(cfg.JWTSecret, handler))
 
-	app := logger.RequestLogger(log, correlationIDMiddleware(mux))
+	app := corsMiddleware(logger.RequestLogger(log, correlationIDMiddleware(mux)))
 	srv := &http.Server{Addr: ":" + cfg.Port, Handler: app}
+
 
 	go func() {
 		log.Info("server listening", "port", cfg.Port)

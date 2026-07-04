@@ -190,3 +190,52 @@ func testToken(t *testing.T, secret string) string {
 	}
 	return signed
 }
+
+func TestCorsMiddleware(t *testing.T) {
+	nextCalled := false
+	next := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		nextCalled = true
+		w.WriteHeader(http.StatusOK)
+	})
+
+	handler := corsMiddleware(next)
+
+	// Case 1: Preflight OPTIONS Request
+	reqOptions := httptest.NewRequest(http.MethodOptions, "/api/auth/login", nil)
+	rrOptions := httptest.NewRecorder()
+	handler.ServeHTTP(rrOptions, reqOptions)
+
+	if nextCalled {
+		t.Fatal("expected preflight OPTIONS request to be intercepted and not call next")
+	}
+	if rrOptions.Code != http.StatusNoContent {
+		t.Fatalf("preflight status = %d, want 204", rrOptions.Code)
+	}
+
+	headers := rrOptions.Header()
+	if got := headers.Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Fatalf("Access-Control-Allow-Origin = %q, want *", got)
+	}
+	if got := headers.Get("Access-Control-Allow-Methods"); got == "" {
+		t.Fatal("Access-Control-Allow-Methods header is missing")
+	}
+	if got := headers.Get("Access-Control-Allow-Headers"); got == "" {
+		t.Fatal("Access-Control-Allow-Headers header is missing")
+	}
+
+	// Case 2: Regular GET Request
+	reqGet := httptest.NewRequest(http.MethodGet, "/api/health", nil)
+	rrGet := httptest.NewRecorder()
+	handler.ServeHTTP(rrGet, reqGet)
+
+	if !nextCalled {
+		t.Fatal("expected regular GET request to call next")
+	}
+	if rrGet.Code != http.StatusOK {
+		t.Fatalf("regular request status = %d, want 200", rrGet.Code)
+	}
+	if got := rrGet.Header().Get("Access-Control-Allow-Origin"); got != "*" {
+		t.Fatalf("regular request Access-Control-Allow-Origin = %q, want *", got)
+	}
+}
+
