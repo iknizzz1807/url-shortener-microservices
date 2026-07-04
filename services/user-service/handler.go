@@ -9,6 +9,8 @@ import (
 	"github.com/ikniz/url-shortener/shared/auth"
 )
 
+const dummyBcryptHash = "$2a$12$MB4lTvA5UVWJU8GPtVFSne/kMHaXBSz45DWvIl/4AS9NLnz7tavNm"
+
 type Handler struct {
 	store  UserRepository
 	hasher PasswordHasher
@@ -117,7 +119,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.store.FindByEmail(r.Context(), req.Email)
 	if user == nil {
-		_ = h.hasher.Verify(req.Password, "$2a$12$invalidhashfortimingsafetyonlyxx")
+		_ = h.hasher.Verify(req.Password, dummyBcryptHash)
 		writeError(w, http.StatusUnauthorized, "invalid credentials")
 		return
 	}

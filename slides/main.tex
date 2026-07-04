@@ -62,7 +62,7 @@
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.33\textwidth}
             \begin{claimbox}{primary}
-                \centering\large\textbf{Không phải app CRUD}\par
+                \centering\large\textbf{Không chỉ là ứng dụng CRUD}\par
                 \vspace{0.15cm}
                 \small Một use case đọc rất nhiều: redirect phải nhanh, ổn định, không phụ thuộc analytics.
             \end{claimbox}
@@ -76,9 +76,9 @@
         \end{column}
         \begin{column}{0.33\textwidth}
             \begin{claimbox}{accent}
-                \centering\large\textbf{Có vận hành}\par
+                \centering\large\textbf{Hỗ trợ triển khai và vận hành}\par
                 \vspace{0.15cm}
-                \small Docker Compose, Kubernetes demo, healthcheck, Prometheus, Grafana, smoke test, k6 load test.
+                \small Docker Compose, Kubernetes deployment, healthcheck, Prometheus, Grafana, smoke test, k6 load test.
             \end{claimbox}
         \end{column}
     \end{columns}
@@ -86,12 +86,12 @@
     \vspace{0.55cm}
     \begin{center}
         \begin{claimbox}[width=0.86\textwidth, halign=center]{best}
-            \textbf{Idea bảo vệ:} hệ thống nhỏ về nghiệp vụ, nhưng đầy đủ các vấn đề thật của microservices: chia domain, dữ liệu phân tán, messaging, cache, resilience, observability và kiểm thử.
+            \textbf{Luận điểm chính:} hệ thống nhỏ về nghiệp vụ, nhưng bao quát các vấn đề thật của microservices: chia domain, dữ liệu phân tán, messaging, cache, resilience, observability và kiểm thử.
         \end{claimbox}
     \end{center}
 \end{frame}
 
-\begin{frame}{Bám sát mục tiêu môn SE361}
+\begin{frame}{Liên hệ với mục tiêu học phần SE361}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \textbf{Đề cương nhắm tới}
@@ -123,15 +123,15 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Bài toán: URL Shortener không đơn giản như nhìn thấy}
+\begin{frame}{Bài toán: Độ phức tạp trong hệ thống rút gọn URL}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{danger}
-                \textbf{Nếu làm kiểu monolith đơn giản}
+                \textbf{Hạn chế của thiết kế monolith đơn giản}
                 \begin{itemize}\tiny
-                    \item Redirect, analytics, notification dính vào cùng request path.
+                    \item Redirect, analytics và notification cùng nằm trên một request path.
                     \item Analytics lỗi có thể kéo chậm redirect.
-                    \item Scale phải scale cả khối dù chỉ redirect nóng.
+                    \item Việc mở rộng phải áp dụng cho toàn bộ hệ thống dù tải chủ yếu đến từ redirect.
                     \item DB chung dễ sinh join chéo và coupling schema.
                 \end{itemize}
             \end{claimbox}
@@ -140,7 +140,7 @@
             \begin{claimbox}{best}
                 \textbf{Cách tiếp cận microservices}
                 \begin{itemize}\scriptsize
-                    \item Redirect là hot path, ưu tiên cache và latency.
+                    \item Redirect là luồng xử lý tần suất cao, cần ưu tiên cache và độ trễ thấp.
                     \item Analytics/notification xử lý bất đồng bộ qua event.
                     \item Mỗi service sở hữu dữ liệu của mình.
                     \item Gateway bảo vệ hệ thống bằng auth, rate limit, circuit breaker.
@@ -182,7 +182,7 @@
     \end{center}
     \vspace{-0.1cm}
     \begin{claimbox}{primary}
-        \small \textbf{Điểm cần nhấn mạnh:} monorepo chỉ là cách tổ chức source code; ranh giới runtime là binary, container, API và database riêng.
+        \small \textbf{Ranh giới kiến trúc:} monorepo chỉ là cách tổ chức source code; ranh giới runtime là binary, container, API và database riêng.
     \end{claimbox}
 \end{frame}
 
@@ -224,7 +224,7 @@
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.50\textwidth}
             \begin{claimbox}{primary}
-                \textbf{Gateway làm ở edge}
+                \textbf{Chức năng tại lớp biên hệ thống}
                 \begin{itemize}\scriptsize
                     \item Reverse proxy route theo path.
                     \item JWT validation cho route private.
@@ -265,16 +265,16 @@
     \end{center}
     \vspace{0.35cm}
     \begin{claimbox}{secondary}
-        \small \textbf{RESTful + pragmatic:} route public/private rõ, list API có cursor pagination, limit được clamp, body auth giới hạn 1MB.
+        \small \textbf{Thiết kế RESTful thực tiễn:} route public/private rõ, list API có cursor pagination, limit được clamp, body auth giới hạn 1MB.
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{URL Service: hot path được tối ưu}
+\begin{frame}{URL Service: tối ưu luồng redirect tần suất cao}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{claimbox}{best}
                 \textbf{Shorten}
-                \begin{itemize}\small
+                \begin{itemize}\scriptsize
                     \item Validate URL chỉ nhận \texttt{http}/\texttt{https}.
                     \item Sinh base62 7 ký tự bằng \texttt{crypto/rand}.
                     \item Không gian mã: \texttt{62\^{}7} $\approx$ 3.5 nghìn tỷ.
@@ -317,11 +317,11 @@
     \end{tikzpicture}
     \end{center}
     \begin{claimbox}{accent}
-        \small \textbf{Failure semantics:} Redis mất thì redirect fallback về PostgreSQL. Hệ thống chậm hơn nhưng không mất dữ liệu vì PostgreSQL vẫn là source of truth.
+        \small \textbf{Ngữ nghĩa khi Redis lỗi:} redirect fallback về PostgreSQL. Hệ thống chậm hơn nhưng không mất dữ liệu vì PostgreSQL là nguồn dữ liệu chính.
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Event-driven: analytics và notification không kéo chậm redirect}
+\begin{frame}{Event-driven: tách analytics và notification khỏi redirect}
     \begin{center}
     \begin{tikzpicture}[scale=0.72, transform shape]
         \node[component, fill=best!12, minimum width=2.4cm] (url) at (-5,1.1) {url-service};
@@ -346,7 +346,7 @@
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Outbox Pattern: không để mất event khi broker lỗi}
+\begin{frame}{Outbox Pattern: đảm bảo lưu trữ event khi broker lỗi}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{danger}
@@ -355,13 +355,13 @@
                     \item Ghi URL thành công.
                     \item RabbitMQ timeout đúng lúc publish.
                     \item DB có dữ liệu nhưng analytics không biết.
-                    \item Dễ mất event, khó reconcile.
+                    \item Có nguy cơ mất event và khó đồng bộ lại giữa các service.
                 \end{itemize}
             \end{claimbox}
         \end{column}
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{best}
-                \textbf{Cách dự án làm}
+                \textbf{Cách triển khai trong hệ thống}
                 \begin{itemize}\small
                     \item Ghi URL và event vào \texttt{outbox} cùng transaction.
                     \item Worker poll mỗi 2 giây, batch 50.
@@ -374,7 +374,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Analytics Service: xử lý đúng trước khi xử lý nhanh}
+\begin{frame}{Analytics Service: ưu tiên tính đúng đắn trước hiệu năng}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.49\textwidth}
             \begin{claimbox}{accent}
@@ -404,7 +404,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Notification Service: side effect được cô lập}
+\begin{frame}{Notification Service: cô lập tác vụ phụ trợ}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.45\textwidth}
             \begin{tikzpicture}[scale=0.74, transform shape]
@@ -419,20 +419,20 @@
         \end{column}
         \begin{column}{0.51\textwidth}
             \begin{claimbox}{secondary}
-                \textbf{Operational details}
+                \textbf{Chi tiết vận hành}
                 \begin{itemize}\small
                     \item Consumer không làm URL Service chậm.
                     \item Notification lưu trạng thái \texttt{pending}, \texttt{sent}, \texttt{sent\_at}.
                     \item List notification theo user có cursor pagination.
                     \item Event \texttt{url.created} chứa email để tránh gọi ngược user-service.
-                    \item Mock email giúp chứng minh flow side-effect mà không cần SMTP thật.
+                    \item Mock email cho phép kiểm thử luồng gửi thông báo mà không cần tích hợp SMTP thực tế.
                 \end{itemize}
             \end{claimbox}
         \end{column}
     \end{columns}
 \end{frame}
 
-\begin{frame}{Security: đủ lớp cần thiết cho đồ án}
+\begin{frame}{Security: các lớp bảo vệ chính}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.33\textwidth}
             \begin{claimbox}{primary}
@@ -455,11 +455,144 @@
     \end{columns}
     \vspace{0.5cm}
     \begin{claimbox}{danger}
-        \small \textbf{Production gap:} demo hiện còn dùng secret mẫu, chưa TLS, chưa refresh token/revocation và chưa RBAC/OAuth2 đầy đủ. Các mục này được tách thành hướng hardening thay vì che giấu trong thiết kế.
+        \small \textbf{Giới hạn triển khai hiện tại:} hệ thống hiện còn dùng secret mẫu, chưa hỗ trợ TLS, refresh token/revocation và RBAC/OAuth2 đầy đủ. Các nội dung này được xác định là hướng mở rộng production hardening.
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Resilience: khi downstream chết, gateway không chết theo}
+\begin{frame}[shrink=5]{Phân tích kỹ thuật 1: giảm rủi ro timing attack khi login}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.47\textwidth}
+            \begin{claimbox}{danger}
+                \textbf{Vấn đề bảo mật tinh vi}
+                \begin{itemize}\small
+                    \item Nếu email không tồn tại và trả lỗi ngay, response chỉ mất vài ms.
+                    \item Nếu email tồn tại nhưng password sai, bcrypt cost 12 mất khoảng hàng trăm ms.
+                    \item Kẻ tấn công có thể đo độ trễ phản hồi để suy luận email tồn tại trong cơ sở dữ liệu.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.49\textwidth}
+            \begin{claimbox}{best}
+                \textbf{Cách hệ thống xử lý}
+                \begin{itemize}\small
+                    \item Login luôn trả cùng thông điệp: \texttt{invalid credentials}.
+                    \item Khi không tìm thấy user, service vẫn chạy bcrypt verify trên dummy hash hợp lệ cost 12.
+                    \item Mục tiêu là giảm chênh lệch timing giữa ``email không tồn tại'' và ``password sai''.
+                    \item Implement tại \texttt{services/user-service/handler.go}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phân tích kỹ thuật 2: an toàn đồng thời trong Outbox}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{accent}
+                \textbf{Tăng throughput bằng worker pool}
+                \begin{itemize}\small
+                    \item Outbox coordinator chạy \texttt{3} worker goroutines.
+                    \item Mỗi lần poll lấy tối đa \texttt{50} event.
+                    \item Poll interval \texttt{2s}.
+                    \item DB claim event bằng \texttt{FOR UPDATE SKIP LOCKED} và \texttt{locked\_until}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{An toàn với RabbitMQ channel}
+                \begin{itemize}\small
+                    \item Nhiều goroutine cùng publish qua một AMQP channel có rủi ro race.
+                    \item \texttt{amqpPublisher} bọc \texttt{PublishWithContext} bằng \texttt{sync.Mutex}.
+                    \item Trade-off: publish được serialize để đảm bảo correctness, nhưng vẫn giữ worker pool cho phần fetch/mark/pipeline xử lý event.
+                    \item Implement tại \texttt{url-service/publisher.go}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phân tích kỹ thuật 3: cursor pagination với LIMIT + 1}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.47\textwidth}
+            \begin{claimbox}{danger}
+                \textbf{Vì sao không dùng OFFSET}
+                \begin{itemize}\small
+                    \item \texttt{OFFSET} càng sâu càng chậm vì DB phải bỏ qua nhiều dòng.
+                    \item Với user có nhiều URL, list page sau sẽ đắt dần.
+                    \item \texttt{COUNT(*)} để biết còn trang sau cũng tốn thêm query.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.49\textwidth}
+            \begin{claimbox}{best}
+                \textbf{Cách hệ thống làm}
+                \begin{itemize}\small
+                    \item API nhận cursor \texttt{after} thay vì offset.
+                    \item Query dùng \texttt{id < afterID}, \texttt{ORDER BY id DESC}.
+                    \item Fetch \texttt{limit + 1}; nếu dư 1 dòng thì biết có trang tiếp theo.
+                    \item Cắt dòng thừa và trả \texttt{next\_cursor}, không cần \texttt{COUNT(*)}.
+                    \item Implement tại \texttt{url-service/store.go} và \texttt{service.go}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phân tích kỹ thuật 4: các primitive tự triển khai tại Gateway}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{Circuit Breaker tự triển khai}
+                \begin{itemize}\small
+                    \item State machine: \texttt{CLOSED}, \texttt{OPEN}, \texttt{HALF\_OPEN}.
+                    \item Thread-safe bằng \texttt{sync.Mutex}.
+                    \item Chỉ cho một probe ở \texttt{HALF\_OPEN} qua \texttt{halfOpenProbe}.
+                    \item Callback state-change cập nhật Prometheus metrics.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{accent}
+                \textbf{Rate Limiter Redis fail-open}
+                \begin{itemize}\small
+                    \item Fixed-window counter bằng \texttt{INCR + EXPIRE}.
+                    \item Mỗi check có timeout \texttt{100ms}.
+                    \item Nếu Redis lỗi, gateway \textbf{fail-open}: cho request đi qua thay vì làm sập API vì cache/rate-limit store.
+                    \item Implement tại \texttt{gateway/ratelimit.go}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Phân tích kỹ thuật 5: graceful shutdown cho cloud-native runtime}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.49\textwidth}
+            \begin{claimbox}{secondary}
+                \textbf{Khi Kubernetes rolling update}
+                \begin{itemize}\small
+                    \item Pod nhận \texttt{SIGTERM} trước khi bị kill.
+                    \item Service cần ngừng nhận request mới và cho request hiện tại kết thúc.
+                    \item URL service còn phải dừng outbox polling qua context cancellation.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.47\textwidth}
+            \begin{claimbox}{best}
+                \textbf{Cách triển khai hiện tại}
+                \begin{itemize}\small
+                    \item Các service listen \texttt{SIGINT/SIGTERM}.
+                    \item HTTP server dùng \texttt{Shutdown(...)} để drain connection.
+                    \item URL service cancel root context cho outbox coordinator và dùng shutdown timeout \texttt{10s}.
+                    \item DB, Redis, RabbitMQ connection được \texttt{Close()} bằng defer sau khi main thoát.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Resilience: cô lập lỗi downstream tại gateway}
     \begin{center}
     \begin{tikzpicture}[scale=0.78, transform shape]
         \node[component, fill=best!12, minimum width=2.1cm] (closed) at (-4,1.2) {CLOSED\scriptsize gọi bình thường};
@@ -475,7 +608,7 @@
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{claimbox}{primary}
-                \small \textbf{Circuit breaker:} giảm cascading failure, tránh request treo hàng loạt khi service chết.
+        \small \textbf{Circuit breaker:} giảm cascading failure, tránh request treo hàng loạt khi upstream mất khả dụng.
             \end{claimbox}
         \end{column}
         \begin{column}{0.48\textwidth}
@@ -486,7 +619,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Scalability: scale theo nút cổ chai, không scale cả cục}
+\begin{frame}{Scalability: mở rộng theo nút nghẽn hệ thống}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{claimbox}{best}
@@ -513,7 +646,7 @@
     \end{columns}
     \vspace{0.35cm}
     \begin{claimbox}{primary}
-        \small \textbf{Horizontal scaling demo:} Docker Compose có overlay scale cho \texttt{url-service=3}; Kubernetes demo triển khai \texttt{url-service} 3 replicas và \texttt{gateway} 2 replicas qua Service discovery.
+        \small \textbf{Horizontal scaling:} Docker Compose có overlay scale cho \texttt{url-service=3}; Kubernetes deployment triển khai \texttt{url-service} 3 replicas và \texttt{gateway} 2 replicas qua Service discovery.
     \end{claimbox}
 \end{frame}
 
@@ -533,11 +666,97 @@
     \end{center}
     \vspace{0.3cm}
     \begin{claimbox}{secondary}
-        \small \textbf{Luận điểm bảo vệ:} không cross-service join, không shared schema. Consistency giữa services đạt bằng event và eventual consistency.
+        \small \textbf{Nguyên tắc nhất quán dữ liệu:} không cross-service join, không shared schema. Consistency giữa services đạt bằng domain event và eventual consistency.
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Observability: biết hệ thống đang sống hay đang gãy}
+\begin{frame}{Database Boundary: tách vật lý, không chỉ tách logical}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{primary}
+                \textbf{Docker Compose}
+                \begin{itemize}\small
+                    \item 4 PostgreSQL containers độc lập.
+                    \item 4 database name và credential riêng.
+                    \item 4 volume riêng: \texttt{url\_db\_data}, \texttt{analytics\_db\_data}, \texttt{user\_db\_data}, \texttt{notification\_db\_data}.
+                    \item Mỗi app chỉ nhận \texttt{DATABASE\_URL} của service đó.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{best}
+                \textbf{Kubernetes}
+                \begin{itemize}\small
+                    \item 4 DB Deployments/Services: \texttt{url-db}, \texttt{analytics-db}, \texttt{user-db}, \texttt{notification-db}.
+                    \item ConfigMap có 4 DSN riêng: \texttt{URL\_DATABASE\_URL}, \texttt{ANALYTICS\_DATABASE\_URL}, \texttt{USER\_DATABASE\_URL}, \texttt{NOTIFICATION\_DATABASE\_URL}.
+                    \item App Deployment chỉ mount DSN tương ứng vào \texttt{DATABASE\_URL}.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{CRUD Ownership: mỗi service chỉ thao tác bảng của mình}
+    \scriptsize
+    \begin{center}
+    \begin{tabular}{>{\bfseries}p{0.18\textwidth}p{0.37\textwidth}p{0.35\textwidth}}
+        \toprule
+        Service & CRUD boundary & Không phụ thuộc DB khác \\
+        \midrule
+        User & \texttt{INSERT users}, \texttt{SELECT users WHERE email}; bcrypt/JWT nằm trong user-service & Không đọc \texttt{urls}, \texttt{clicks}, \texttt{notifications} \\
+        URL & \texttt{INSERT urls}, \texttt{SELECT urls WHERE short\_code}, list theo \texttt{user\_id}, soft delete bằng \texttt{UPDATE is\_active=false} & Ownership check nằm trong điều kiện SQL \texttt{short\_code + user\_id} \\
+        Analytics & \texttt{INSERT clicks}, query stats/timeline, \texttt{processed\_events}, \texttt{milestones} & Không join sang \texttt{urls}; nhận \texttt{short\_code} qua event \\
+        Notification & \texttt{INSERT notifications}, update status \texttt{pending -> sent}, list theo \texttt{user\_id} & Không join sang \texttt{users}; nhận payload qua event \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Schema Ownership: không có foreign key xuyên service}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{secondary}
+                \textbf{Denormalized identifiers}
+                \begin{itemize}\small
+                    \item \texttt{url\_db.urls} lưu \texttt{user\_id}, \texttt{user\_email} để URL service không join user DB.
+                    \item \texttt{analytics\_db.clicks} lưu \texttt{short\_code} để analytics không join URL DB.
+                    \item \texttt{notification\_db.notifications} lưu \texttt{user\_id} và \texttt{payload JSONB} để không join user/url DB.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{claimbox}{accent}
+                \textbf{Consistency qua event}
+                \begin{itemize}\small
+                    \item URL mutation ghi event vào \texttt{outbox} cùng transaction.
+                    \item Analytics nhận \texttt{url.clicked} và tự lưu click local.
+                    \item Notification nhận \texttt{url.created}, \texttt{url.deleted}, \texttt{milestone.reached}.
+                    \item Hệ thống chấp nhận eventual consistency thay vì shared transaction xuyên DB.
+                \end{itemize}
+            \end{claimbox}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Database Indexing: thiết kế theo query path}
+    \scriptsize
+    \begin{center}
+    \begin{tabular}{>{\bfseries}p{0.22\textwidth}p{0.33\textwidth}p{0.35\textwidth}}
+        \toprule
+        Query path & Index/constraint & Mục đích \\
+        \midrule
+        Redirect by code & \texttt{idx\_urls\_short\_code}, \texttt{UNIQUE(short\_code)} & Lookup nhanh và chống collision mã ngắn \\
+        List URLs by user & \texttt{idx\_urls\_user\_id\_created} & Hỗ trợ cursor pagination theo owner \\
+        Outbox publish & \texttt{idx\_outbox\_unpublished}, \texttt{idx\_outbox\_unpublished\_unlocked} & Worker claim event chưa publish hiệu quả \\
+        Analytics stats & \texttt{idx\_clicks\_short\_code\_time}, \texttt{idx\_clicks\_referer} & Count/timeline/top referer theo short code \\
+        Milestone idempotency & \texttt{UNIQUE(short\_code, milestone)} & Tránh phát sinh nhiều milestone trùng \\
+        Notification list & \texttt{idx\_notifications\_user\_created} & List notification theo user và thời gian \\
+        \bottomrule
+    \end{tabular}
+    \end{center}
+\end{frame}
+
+\begin{frame}{Observability: giám sát trạng thái vận hành hệ thống}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.50\textwidth}
             \begin{claimbox}{primary}
@@ -563,7 +782,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Load testing: chứng minh chịu tải và circuit breaker}
+\begin{frame}{Load testing: đánh giá khả năng chịu tải và circuit breaker}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{best}
@@ -579,7 +798,7 @@
         \end{column}
         \begin{column}{0.49\textwidth}
             \begin{claimbox}{danger}
-                \textbf{Demo failure thật}
+                \textbf{Kịch bản mô phỏng lỗi}
                 \begin{itemize}\small
                     \item Trong lúc k6 chạy: \texttt{docker compose stop url-service}.
                     \item Gateway nhận lỗi kết nối.
@@ -592,7 +811,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Benchmark targets trong tài liệu thiết kế}
+\begin{frame}{Mục tiêu benchmark trong tài liệu thiết kế}
     \scriptsize
     \begin{center}
     \begin{tabular}{>{\bfseries}p{0.28\textwidth}p{0.25\textwidth}p{0.34\textwidth}}
@@ -611,11 +830,11 @@
     \end{center}
     \vspace{0.25cm}
     \begin{claimbox}{accent}
-        \small Khi bảo vệ nên nói đây là \textbf{target/expected benchmark trong dev docs}; kết quả thực tế phụ thuộc tài nguyên máy Docker lúc chạy.
+        \small Các giá trị trên là mục tiêu benchmark trong tài liệu thiết kế; kết quả thực tế phụ thuộc tài nguyên máy Docker khi chạy thử nghiệm.
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Testing: không chỉ chạy được trên máy em}
+\begin{frame}{Testing: kiểm chứng trên nhiều mức độ}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.32\textwidth}
             \begin{claimbox}{primary}
@@ -642,7 +861,7 @@
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Những thứ nhỏ nhưng thầy rất hay hỏi}
+\begin{frame}{Các chi tiết kỹ thuật bổ sung}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{claimbox}{primary}
@@ -671,11 +890,11 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Exactly-once? Không, và đó là câu trả lời đúng}
+\begin{frame}{Delivery Semantics: lựa chọn at-least-once}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{danger}
-                \textbf{Không hứa quá mức}
+                \textbf{Giới hạn của mô hình delivery}
                 \begin{itemize}\small
                     \item RabbitMQ + outbox thực tế là at-least-once.
                     \item Message có thể bị redeliver.
@@ -701,17 +920,17 @@
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Đánh đổi và hạn chế hiện tại}
+\begin{frame}{Đánh đổi thiết kế và giới hạn hiện tại}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{accent}
-                \textbf{Đã đủ cho đồ án}
+                \textbf{Phạm vi triển khai hiện tại}
                 \begin{itemize}\small
                     \item Local Docker Compose chạy toàn stack.
-                    \item Kubernetes demo cho kind/minikube.
+                    \item Kubernetes manifests cho kind/minikube.
                     \item Microservice boundary rõ.
                     \item Có cache, broker, DB riêng, metrics.
-                    \item Có demo failure bằng circuit breaker.
+                    \item Có kịch bản mô phỏng lỗi bằng circuit breaker.
                 \end{itemize}
             \end{claimbox}
         \end{column}
@@ -719,10 +938,10 @@
             \begin{claimbox}{danger}
                 \textbf{Chưa production-ready hoàn toàn}
                 \begin{itemize}\small
-                    \item K8s demo dùng local cluster, chưa production-grade managed cluster.
+                    \item K8s hiện hướng tới local cluster, chưa production-grade managed cluster.
                     \item Chưa OpenTelemetry tracing/Jaeger.
                     \item Metrics chủ yếu ở gateway.
-                    \item Secrets demo trong compose, chưa Vault/Secret Manager.
+                    \item Secret hiện là giá trị mẫu, chưa tích hợp Vault/Secret Manager.
                     \item Chưa CI/CD workflow và contract test đầy đủ.
                 \end{itemize}
             \end{claimbox}
@@ -730,7 +949,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Kubernetes Demo \& Production Roadmap}
+\begin{frame}{Triển khai Kubernetes \& lộ trình production}
     \begin{center}
     \begin{tikzpicture}[scale=0.74, transform shape]
         \node[component, fill=primary!12, minimum width=2.5cm] (k8s) at (-5,1.2) {K8s Demo\scriptsize kind/minikube};
@@ -745,37 +964,37 @@
     \end{center}
     \vspace{0.3cm}
     \begin{claimbox}{primary}
-        \small Repo đã có manifest Kubernetes cho local demo: Namespace, ConfigMap, Secret, Deployments, Services, readiness probes, \texttt{url-service} 3 replicas, \texttt{gateway} 2 replicas và NodePort 30080. Roadmap production còn lại là HPA, Ingress/TLS, managed secrets, tracing và CI/CD.
+        \small Repo đã có manifest Kubernetes cho môi trường local: Namespace, ConfigMap, Secret, Deployments, Services, readiness probes, \texttt{url-service} 3 replicas, \texttt{gateway} 2 replicas và NodePort 30080. Lộ trình production còn lại là HPA, Ingress/TLS, managed secrets, tracing và CI/CD.
     \end{claimbox}
 \end{frame}
 
-\begin{frame}{Checklist phòng thủ câu hỏi nhanh}
+\begin{frame}{Tóm tắt các quyết định thiết kế chính}
     \scriptsize
     \begin{center}
     \begin{tabular}{p{0.41\textwidth}p{0.49\textwidth}}
         \toprule
-        Câu hỏi & Trả lời ngắn \\
+        Chủ đề & Tóm tắt thiết kế \\
         \midrule
-        Vì sao là microservice? & Binary/container/DB riêng, HTTP + RabbitMQ, không shared DB. \\
-        Redis chết thì sao? & Fallback PostgreSQL; Redis không phải source of truth. \\
-        Analytics chết thì redirect có chết không? & Không, click đi qua outbox/RabbitMQ, xử lý eventual consistency. \\
-        Có exactly-once không? & Không hứa; at-least-once + dedup ở analytics. \\
-        URL service chết thì sao? & Gateway circuit breaker OPEN và trả 503 nhanh. \\
-        Có chống spam không? & Rate limit theo IP bằng Redis ở gateway. \\
-        Có bảo mật password không? & bcrypt, không lưu plaintext, JWT có expiry. \\
-        Có quan sát hệ thống không? & Prometheus metrics, Grafana dashboard, structured logs, correlation ID. \\
+        Service boundary & Binary/container/API/DB riêng cho từng bounded context. \\
+        Data ownership & Không shared database; mỗi service chỉ nhận \texttt{DATABASE\_URL} của chính nó. \\
+        Cache strategy & Redis chỉ là cache/rate-limit store; PostgreSQL là nguồn dữ liệu chính. \\
+        Async workflow & Analytics/notification đi qua Outbox + RabbitMQ để giữ redirect path ngắn. \\
+        Delivery model & At-least-once messaging; analytics dedup bằng \texttt{processed\_events}. \\
+        Resilience & Gateway có rate limit, circuit breaker và fail-open khi Redis lỗi. \\
+        Security & bcrypt, JWT expiry, timing-attack mitigation và ownership check. \\
+        Observability & Structured logs, correlation ID, Prometheus metrics, Grafana dashboard. \\
         \bottomrule
     \end{tabular}
     \end{center}
 \end{frame}
 
-\begin{frame}{D2 Architecture Map: nhìn toàn hệ thống trong một hình}
+\begin{frame}{D2 Architecture Map: tổng quan hệ thống}
     \begin{center}
         \includegraphics[width=0.92\textwidth,height=0.68\textheight,keepaspectratio]{architecture.pdf}
     \end{center}
     \vspace{-0.15cm}
     \begin{claimbox}{primary}
-        \scriptsize Sơ đồ D2 này cố tình thể hiện cả runtime boundary, data ownership và operations để chứng minh đây là một hệ thống microservices có vận hành, không chỉ là nhiều package Go.
+        \scriptsize Sơ đồ D2 thể hiện runtime boundary, data ownership và operations của hệ thống microservices.
     \end{claimbox}
 \end{frame}
 
@@ -784,7 +1003,7 @@
     \begin{center}
     \begin{tabular}{>{\bfseries}p{0.24\textwidth}p{0.33\textwidth}p{0.33\textwidth}}
         \toprule
-        Tiêu chí môn học & Hiện thực trong dự án & Slide/demo để bảo vệ \\
+        Tiêu chí môn học & Hiện thực trong dự án & Minh chứng trong hệ thống \\
         \midrule
         DDD, SRP, Bounded Context & User, URL, Analytics, Notification, Gateway tách trách nhiệm rõ & Service responsibility + DB ownership \\
         RESTful API & Gateway expose endpoint public/private, service nội bộ HTTP/JSON & API surface, route table \\
@@ -802,8 +1021,8 @@
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.31\textwidth}
             \begin{claimbox}{danger}
-                \centering\textbf{Monolith ngây thơ}\par\small
-                Auth, shorten, redirect, analytics, notification cùng process và cùng DB. Dễ demo nhưng khó scale và dễ cascading failure.
+                \centering\textbf{Monolith đơn giản}\par\small
+                Auth, shorten, redirect, analytics, notification cùng process và cùng DB. Thiết kế này đơn giản nhưng khó mở rộng và dễ cascading failure.
             \end{claimbox}
         \end{column}
         \begin{column}{0.31\textwidth}
@@ -815,13 +1034,13 @@
         \begin{column}{0.31\textwidth}
             \begin{claimbox}{best}
                 \centering\textbf{Vận hành được}\par\small
-                Gateway bảo vệ edge, RabbitMQ hấp thụ side effect, Redis giảm tải hot path, Prometheus/Grafana quan sát lỗi.
+                Gateway bảo vệ lớp biên, RabbitMQ hấp thụ tác vụ phụ trợ, Redis giảm tải luồng redirect, Prometheus/Grafana quan sát lỗi.
             \end{claimbox}
         \end{column}
     \end{columns}
     \vspace{0.35cm}
     \begin{claimbox}{primary}
-        \small \textbf{Luận điểm:} URL shortener là bài toán nhỏ nhưng có profile tải rất thực tế: redirect đọc nhiều, analytics ghi nhiều, notification là side effect; vì vậy microservices có lý do kỹ thuật, không phải tách cho có.
+        \small \textbf{Luận điểm:} URL shortener là bài toán nhỏ nhưng có profile tải rất thực tế: redirect đọc nhiều, analytics ghi nhiều, notification là tác vụ phụ trợ; vì vậy việc tách service dựa trên nhu cầu kỹ thuật thay vì chỉ mang tính hình thức.
     \end{claimbox}
 \end{frame}
 
@@ -885,7 +1104,7 @@
         \includegraphics[width=0.95\textwidth,height=0.76\textheight,keepaspectratio]{redirect_flow.pdf}
     \end{center}
     \begin{claimbox}{best}
-        \scriptsize Điểm cần nói khi demo: redirect không chờ analytics consumer. Click event được ghi async; người dùng nhận redirect nhanh nhất có thể.
+        \scriptsize Redirect không chờ analytics consumer. Click event được ghi bất đồng bộ; người dùng nhận redirect nhanh nhất có thể.
     \end{claimbox}
 \end{frame}
 
@@ -908,7 +1127,7 @@
                 \begin{itemize}\small
                     \item Nếu insert đụng unique \texttt{short\_code}, service retry.
                     \item Retry tối đa 3 lần để tránh loop vô hạn.
-                    \item Với 1 triệu URL, xác suất collision cực thấp theo dev docs.
+                    \item Với 1 triệu URL, xác suất collision rất thấp theo tính toán trong tài liệu thiết kế.
                     \item Không cần coordination service để cấp mã trong scope đồ án.
                 \end{itemize}
             \end{claimbox}
@@ -942,7 +1161,7 @@
                     \item \texttt{analytics.clicks} nhận \texttt{url.clicked}.
                     \item \texttt{notifications.events} nhận \texttt{url.created}, \texttt{url.deleted}, \texttt{milestone.reached}.
                     \item Analytics phát ngược \texttt{milestone.reached} khi đạt 10/100/1000 clicks.
-                    \item Consumer không gọi chéo để hỏi thêm dữ liệu nếu event đã đủ payload.
+                    \item Consumer không gọi chéo sang service khác khi event đã đủ payload.
                 \end{itemize}
             \end{claimbox}
         \end{column}
@@ -969,7 +1188,7 @@
                     \item Outbox đảm bảo DB mutation và event cùng transaction.
                     \item At-least-once delivery qua RabbitMQ.
                     \item Analytics dedup bằng \texttt{processed\_events}.
-                    \item Milestone unique constraint tránh bắn nhiều lần.
+                    \item Milestone unique constraint tránh phát sinh nhiều thông báo trùng lặp.
                 \end{itemize}
             \end{claimbox}
         \end{column}
@@ -984,7 +1203,7 @@
         DB & Bảng chính & Lý do thiết kế \\
         \midrule
         \texttt{user\_db} & \texttt{users(id, email, password\_hash, created\_at)} & User service sở hữu identity; email unique để chống duplicate. \\
-        \texttt{url\_db} & \texttt{urls}, \texttt{outbox} & URL là source of truth; outbox là cầu nối sang messaging. \\
+        \texttt{url\_db} & \texttt{urls}, \texttt{outbox} & URL là nguồn dữ liệu chính; outbox là cầu nối sang messaging. \\
         \texttt{analytics\_db} & \texttt{clicks}, \texttt{processed\_events}, \texttt{milestones} & Click append-only, event dedup, milestone unique. \\
         \texttt{notification\_db} & \texttt{notifications(user\_id, payload, status, sent\_at)} & Side effect được lưu trạng thái để debug/retry. \\
         \bottomrule
@@ -992,7 +1211,7 @@
     \end{center}
     \vspace{0.3cm}
     \begin{claimbox}{secondary}
-        \small \textbf{Indexes cần nhắc:} \texttt{short\_code} cho redirect, \texttt{user\_id + created\_at} cho list URL, \texttt{outbox unpublished} cho worker, \texttt{processed\_events(event\_id)} cho dedup.
+        \small \textbf{Các chỉ mục chính:} \texttt{short\_code} cho redirect, \texttt{user\_id + created\_at} cho list URL, \texttt{outbox unpublished} cho worker, \texttt{processed\_events(event\_id)} cho dedup.
     \end{claimbox}
 \end{frame}
 
@@ -1109,7 +1328,7 @@
     \end{columns}
 \end{frame}
 
-\begin{frame}{Load Test Script: thuyết phục bằng quy trình demo}
+\begin{frame}{Load Test Script: quy trình kiểm thử tải}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.47\textwidth}
             \begin{claimbox}{best}
@@ -1150,25 +1369,25 @@
         URL abuse/spam & Rate limit theo IP, body limit auth & Có thể thêm per-user quota và CAPTCHA \\
         Privacy analytics & Hash IP trước khi lưu event & Salt config cần audit kỹ \\
         Unauthorized delete & Ownership check bằng user id & Có thể thêm RBAC/team ownership \\
-        Secret exposure & Env config cho demo & Production cần Vault/K8s Secret \\
+        Secret exposure & Env config hiện dùng giá trị mẫu & Production cần Vault/K8s Secret \\
         \bottomrule
     \end{tabular}
     \end{center}
 \end{frame}
 
-\begin{frame}{Những câu hỏi khó và cách trả lời không bị hớ}
+\begin{frame}{Các vấn đề thiết kế cần làm rõ}
     \scriptsize
     \begin{center}
     \begin{tabular}{p{0.35\textwidth}p{0.55\textwidth}}
         \toprule
-        Câu hỏi khó & Trả lời ngắn gọn \\
+        Vấn đề thiết kế & Quyết định kiến trúc \\
         \midrule
-        Nếu RabbitMQ down lúc tạo URL? & URL và event vẫn nằm trong DB/outbox; worker publish lại khi broker phục hồi. \\
-        Nếu consumer xử lý trùng event? & Analytics dedup bằng \texttt{processed\_events}; milestone có unique constraint. Notification duplicate là hạn chế đã nhận diện. \\
-        Vì sao không Saga? & Use case không cần distributed transaction nhiều bước có compensation; Outbox + eventual consistency đủ phù hợp. \\
-        Redis cache stale sau delete? & Delete URL set inactive trong DB và xóa cache Redis; DB vẫn là source of truth. \\
-        Tại sao gateway verify JWT mà service vẫn cần biết user? & Gateway là lớp edge; downstream vẫn nhận identity qua header/context để enforce ownership. \\
-        Có scale thật chưa? & Compose demo một replica; thiết kế stateless cho gateway/url-service và cache/event broker hỗ trợ scale ngang. \\
+        Broker tạm mất khả dụng & URL và event vẫn nằm trong DB/outbox; worker publish lại khi broker phục hồi. \\
+        Consumer nhận message trùng & Analytics dedup bằng \texttt{processed\_events}; milestone có unique constraint. Notification duplicate là giới hạn đã nhận diện. \\
+        Không dùng Saga & Use case không cần distributed transaction nhiều bước có compensation; Outbox + eventual consistency phù hợp hơn. \\
+        Cache stale sau delete & Delete URL set inactive trong DB và xóa cache Redis; DB vẫn là nguồn dữ liệu chính. \\
+        Auth ở gateway và ownership ở service & Gateway xác thực token tại edge; downstream vẫn nhận identity để enforce ownership trong domain service. \\
+        Horizontal scaling & Compose overlay hỗ trợ \texttt{url-service=3}; Kubernetes triển khai \texttt{url-service} 3 replicas và \texttt{gateway} 2 replicas. \\
         \bottomrule
     \end{tabular}
     \end{center}
