@@ -12,6 +12,7 @@ import (
 
 	"github.com/ikniz/url-shortener/shared/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -48,6 +49,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mux.HandleFunc("GET /stats/{code}", statsHandler.Stats)
 	mux.HandleFunc("GET /stats/{code}/timeline", statsHandler.TimeLine)
 

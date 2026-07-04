@@ -7,3 +7,23 @@ scrape_configs:
     static_configs:
       - targets: ["gateway:8080"]
     metrics_path: /metrics
+
+  - job_name: "url-service"
+    static_configs:
+      - targets: ["url-service:8080"]
+    metrics_path: /metrics
+
+  - job_name: "analytics-service"
+    static_configs:
+      - targets: ["analytics-service:8080"]
+    metrics_path: /metrics
+
+  - job_name: "user-service"
+    static_configs:
+      - targets: ["user-service:8080"]
+    metrics_path: /metrics
+
+  - job_name: "notification-service"
+    static_configs:
+      - targets: ["notification-service:8080"]
+    metrics_path: /metrics

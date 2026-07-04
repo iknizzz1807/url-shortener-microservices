@@ -13,6 +13,7 @@ import (
 	"github.com/ikniz/url-shortener/shared/auth"
 	"github.com/ikniz/url-shortener/shared/logger"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 const (
@@ -46,6 +47,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mux.Handle("GET /notifications", authMw(http.HandlerFunc(handler.List)))
 
 	srv := &http.Server{

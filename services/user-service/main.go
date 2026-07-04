@@ -10,6 +10,7 @@ import (
 
 	"github.com/ikniz/url-shortener/shared/auth"
 	"github.com/ikniz/url-shortener/shared/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -46,6 +47,7 @@ func main() {
 	mux.HandleFunc("POST /login", handler.Login)
 	mux.Handle("GET /me", auth.JWTMiddleware(cfg.JWTSecret)(http.HandlerFunc(handler.Me)))
 	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
+	mux.Handle("GET /metrics", promhttp.Handler())
 
 	srv := &http.Server{
 		Addr:    ":" + cfg.Port,

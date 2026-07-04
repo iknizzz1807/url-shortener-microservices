@@ -12,6 +12,7 @@ import (
 
 	"github.com/ikniz/url-shortener/shared/auth"
 	"github.com/ikniz/url-shortener/shared/logger"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 //go:embed migration.sql
@@ -76,6 +77,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /health", NewHealthHandler(cfg.ServiceName))
+	mux.Handle("GET /metrics", promhttp.Handler())
 	mux.Handle("POST /shorten", authMw(http.HandlerFunc(handler.HandleShorten)))
 	mux.HandleFunc("GET /{code}", handler.HandleRedirect)
 	mux.HandleFunc("POST /shorten-anon", handler.HandleShortenAnon)
