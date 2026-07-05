@@ -84,6 +84,12 @@ services:
       timeout: 5s
       retries: 10
       start_period: 10s
+  adminer:
+    image: adminer:latest
+    ports:
+      - "8090:8080"
+    networks:
+      - url-shortener
   # ── Message Broker ───────────────────────────────────────────────────────────
   rabbitmq:
     image: rabbitmq:3.13-management-alpine
@@ -320,4 +326,31 @@ services:
       - url-shortener
     depends_on:
       - prometheus
+      - loki
+    restart: unless-stopped
+
+  loki:
+    image: grafana/loki:2.9.1
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./monitoring/loki-config.yml:/etc/loki/local-config.yaml:ro
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - url-shortener
+    restart: unless-stopped
+
+  promtail:
+    image: grafana/promtail:latest
+    environment:
+      - DOCKER_API_VERSION=1.44
+    volumes:
+      - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command: -config.file=/etc/promtail/config.yml
+    networks:
+      - url-shortener
+    depends_on:
+      - loki
     restart: unless-stopped

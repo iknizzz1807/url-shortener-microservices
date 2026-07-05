@@ -39,8 +39,13 @@ func NewRabbitMQConn(ctx context.Context, amqpURL string, log *slog.Logger, maxA
 	var conn *amqp.Connection
 	var err error
 	backoff := time.Second
+	config := amqp.Config{
+		Properties: amqp.Table{
+			"connection_name": "url-service",
+		},
+	}
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		conn, err = amqp.Dial(amqpURL)
+		conn, err = amqp.DialConfig(amqpURL, config)
 		if err == nil {
 			break
 		}

@@ -53,7 +53,12 @@ func NewRabbitMQConn(ctx context.Context, url string, log *slog.Logger, maxAttem
 }
 
 func dialRabbitMQ(url string) (*RabbitMQConn, error) {
-	conn, err := amqp.Dial(url)
+	config := amqp.Config{
+		Properties: amqp.Table{
+			"connection_name": "analytics-service",
+		},
+	}
+	conn, err := amqp.DialConfig(url, config)
 	if err != nil {
 		return nil, err
 	}

@@ -50,12 +50,22 @@ func RequestLogger(log *slog.Logger, next http.Handler) http.Handler {
 			correlationID = r.Header.Get("X-Correlation-ID")
 		}
 
-		WithCorrelationID(log, correlationID).Info("http request",
-			"method", r.Method,
-			"path", r.URL.Path,
-			"status", recorder.status,
+		logWithID := WithCorrelationID(log, correlationID)
+		msg := "http request"
+		fields := []any{
+			"method",      r.Method,
+			"path",        r.URL.Path,
+			"status",      recorder.status,
 			"duration_ms", time.Since(start).Milliseconds(),
-		)
+		}
+
+		if recorder.status >= 500 {
+			logWithID.Error(msg, fields...)
+		} else if recorder.status >= 400 {
+			logWithID.Warn(msg, fields...)
+		} else {
+			logWithID.Info(msg, fields...)
+		}
 	})
 }
 
