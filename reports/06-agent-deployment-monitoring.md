@@ -11,69 +11,58 @@
 ## Mục Lục
 
 1. [Tổng Quan Kiến Trúc Triển Khai](#1-tổng-quan-kiến-trúc-triển-khai)
-2. [Docker Compose — Môi Trường Phát Triển](#2-docker-compose--môi-trường-phát-triển)
-   - 2.1. Danh Sách 21 Containers
-   - 2.2. Images và Tags
-   - 2.3. Port Mapping
-   - 2.4. Networks
-   - 2.5. Volumes
-   - 2.6. Depends On và Điều Kiện Khởi Động
-   - 2.7. Environment Variables
-   - 2.8. Healthchecks
-   - 2.9. Restart Policies
-3. [Dockerfiles — Multi-Stage Build](#3-dockerfiles--multi-stage-build)
-   - 3.1. Go Services Dockerfiles
-   - 3.2. Gateway Dockerfile
-   - 3.3. Frontend Dockerfile
-   - 3.4. Phân Tích Kỹ Thuật Build
-4. [Kubernetes Manifests](#4-kubernetes-manifests)
-   - 4.1. Namespace — `namespace.yaml`
-   - 4.2. ConfigMap và Secrets — `config.yaml`
-   - 4.3. Infrastructure Deployments — `infra.yaml`
-   - 4.4. Application Deployments — `apps.yaml`
-   - 4.5. Services và NodePort
-   - 4.6. Phân Tích Deployment vs StatefulSet
-5. [Health Checks — Liveness và Readiness](#5-health-checks--liveness-và-readiness)
-   - 5.1. ReadinessProbe trong Docker Compose
-   - 5.2. ReadinessProbe trong Kubernetes
-   - 5.3. So Sánh và Đối Chiếu
-6. [Infrastructure Components](#6-infrastructure-components)
-   - 6.1. PostgreSQL (4 Instances)
-   - 6.2. Redis Cache
-   - 6.3. RabbitMQ Message Broker
-   - 6.4. Nginx Reverse Proxy
-   - 6.5. Adminer
-7. [CI/CD Pipeline — GitHub Actions](#7-cicd-pipeline--github-actions)
-   - 7.1. Continuous Integration (CI)
-   - 7.2. Continuous Delivery (CD)
-   - 7.3. Build Matrix
-   - 7.4. Docker Layer Caching
-   - 7.5. Multi-Arch Build
-   - 7.6. Deploy to AKS
-8. [Monitoring Stack](#8-monitoring-stack)
-   - 8.1. Prometheus — Cấu Hình Scrape
-   - 8.2. Grafana — Dashboards
-   - 8.3. Loki — Log Aggregation
-   - 8.4. Promtail — Log Collector
-   - 8.5. Datasource Provisioning
-9. [Logging Stack](#9-logging-stack)
-   - 9.1. Loki Configuration
-   - 9.2. Promtail Configuration
-   - 9.3. Grafana Log Explorer
-10. [Container Dependency Graph](#10-container-dependency-graph)
-    - 10.1. Dependency Tree
-    - 10.2. Startup Order
-    - 10.3. Critical Path Analysis
-11. [Production Deployment Recommendations](#11-production-deployment-recommendations)
-    - 11.1. Ingress Controller
-    - 11.2. Horizontal Pod Autoscaler (HPA)
-    - 11.3. StatefulSet cho Databases
-    - 11.4. Resource Requests và Limits
-    - 11.5. PersistentVolumeClaims
-    - 11.6. Network Policies
-    - 11.7. Pod Disruption Budgets
-    - 11.8. Secret Management
-12. [Kết Luận](#12-kết-luận)
+2. [Docker Compose & Dockerfiles — Phát Triển & Build](#2-docker-compose--dockerfiles--phát-triển--build)
+   - 2.1. Cấu Hình Chi Tiết Các Container
+   - 2.2. Tài Nguyên, Phụ Thuộc và Môi Trường
+   - 2.3. Quy trình Build Docker (Dockerfiles)
+3. [Kubernetes Manifests](#3-kubernetes-manifests)
+   - 3.1. Namespace
+   - 3.2. ConfigMap và Secrets
+   - 3.3. Infrastructure Deployments
+   - 3.4. Application Deployments
+   - 3.5. Services và NodePort
+   - 3.6. Phân Tích Deployment vs StatefulSet
+4. [Health Checks — Liveness và Readiness](#4-health-checks--liveness-và-readiness)
+   - 4.1. ReadinessProbe trong Docker Compose
+   - 4.2. ReadinessProbe trong Kubernetes
+   - 4.3. So Sánh và Đối Chiếu
+5. [Infrastructure Components](#5-infrastructure-components)
+   - 5.1. PostgreSQL (4 Instances)
+   - 5.2. Redis Cache
+   - 5.3. RabbitMQ Message Broker
+   - 5.4. Nginx Reverse Proxy
+   - 5.5. Adminer
+6. [CI/CD Pipeline — GitHub Actions](#6-cicd-pipeline--github-actions)
+   - 6.1. Continuous Integration (CI)
+   - 6.2. Continuous Delivery (CD)
+   - 6.3. Build Matrix
+   - 6.4. Docker Layer Caching
+   - 6.5. Multi-Arch Build
+   - 6.6. Deploy to AKS
+7. [Monitoring Stack](#7-monitoring-stack)
+   - 7.1. Prometheus — Cấu Hình Scrape
+   - 7.2. Grafana — Dashboards
+   - 7.3. Loki — Log Aggregation
+   - 7.4. Promtail — Log Collector
+   - 7.5. Datasource Provisioning
+8. [Logging Stack](#8-logging-stack)
+   - 8.1. Loki Configuration
+   - 8.2. Promtail Configuration
+   - 8.3. Grafana Log Explorer
+9. [Container Dependency Graph](#9-container-dependency-graph)
+   - 9.1. Dependency Tree
+   - 9.2. Startup Order
+   - 9.3. Critical Path Analysis
+10. [Production Deployment Recommendations](#10-production-deployment-recommendations)
+    - 10.1. Ingress Controller
+    - 10.2. Horizontal Pod Autoscaler (HPA)
+    - 10.3. StatefulSet cho Databases
+    - 10.4. Resource Requests và Limits
+    - 10.5. PersistentVolumeClaims
+    - 10.6. Network Policies
+    - 10.7. Pod Disruption Budgets
+    - 10.8. Secret Management
+11. [Kết Luận](#11-kết-luận)
 
 ---
 
@@ -83,2631 +72,524 @@ Dự án URL Shortener Microservices sử dụng kiến trúc microservices vớ
 
 | Môi Trường | Platform | Mục Đích |
 |-----------|----------|----------|
-| Development | Docker Compose | 21 containers chạy local, phát triển và debug |
+| Development | Docker Compose | 18 containers chạy local, phát triển và debug |
 | Production | Kubernetes (AKS) | Triển khai cloud-native, scale tự động |
 
-Kiến trúc tổng thể bao gồm các layer sau:
+Kiến trúc triển khai tổng thể được biểu diễn như sơ đồ dưới đây:
 
-```
-Internet
-    │
-    ▼
-┌────────────────────────────────────────────────────────────┐
-│                   Nginx (Reverse Proxy)                     │
-│              Port 80 → gateway:8080 / frontend:5173         │
-└────────────────────────────────────────────────────────────┘
-    │
-    ▼
-┌────────────────────────────────────────────────────────────┐
-│              Gateway Service (Port 8080)                    │
-│         Circuit Breaker · Rate Limiter · JWT Auth          │
-│         Metrics · Proxy · Routing                          │
-└────────────────────────────────────────────────────────────┘
-    │            │           │              │
-    ▼            ▼           ▼              ▼
-┌────────┐ ┌──────────┐ ┌────────┐ ┌──────────────┐
-│ URL    │ │Analytics │ │ User   │ │Notification  │
-│ Service│ │ Service  │ │ Service│ │ Service      │
-│ :8081  │ │ :8082    │ │ :8083  │ │ :8084        │
-└───┬────┘ └───┬──────┘ └───┬────┘ └──────┬───────┘
-    │          │             │             │
-    ▼          ▼             ▼             ▼
- url_db   analytics_db   user_db     notification_db
-(Postgres) (Postgres)   (Postgres)    (Postgres)
+```mermaid
+graph TD
+    classDef db fill:#85C1E9,stroke:#333,stroke-width:2px;
+    classDef svc fill:#82E0AA,stroke:#333,stroke-width:2px;
+    classDef broker fill:#F8C471,stroke:#333,stroke-width:2px;
+    classDef monitor fill:#D7BDE2,stroke:#333,stroke-width:2px;
 
-    ─── Redis (Cache) ───── RabbitMQ (Message Broker) ───
+    Client[Internet] --> Nginx[Nginx Reverse Proxy]
+    Nginx -->|Port 80: /api, /r, /health| Gateway[API Gateway:8080]
+    Nginx -->|Port 80: /| Frontend[Frontend:5173]
 
-┌────────────────────────────────────────────────────────┐
-│              Monitoring Stack                           │
-│  Prometheus → Grafana · Loki ← Promtail ← Docker Logs │
-└────────────────────────────────────────────────────────┘
+    Gateway -->|HTTP| URLS[URL Service:8081]:::svc
+    Gateway -->|HTTP| AnalyticsS[Analytics Service:8082]:::svc
+    Gateway -->|HTTP| UserS[User Service:8083]:::svc
+    Gateway -->|HTTP| NotificationS[Notification Service:8084]:::svc
+
+    URLS --> URL_DB[(url_db)]:::db
+    AnalyticsS --> Analytics_DB[(analytics_db)]:::db
+    UserS --> User_DB[(user_db)]:::db
+    NotificationS --> Notification_DB[(notification_db)]:::db
+
+    URLS -.-> Redis[(Redis Cache)]:::db
+    Gateway -.-> Redis
+
+    URLS -.-> RabbitMQ{RabbitMQ Broker}:::broker
+    AnalyticsS -.-> RabbitMQ
+    NotificationS -.-> RabbitMQ
+
+    Prometheus[Prometheus]:::monitor -->|Scrape /metrics| Gateway
+    Prometheus -->|Scrape /metrics| URLS
+    Prometheus -->|Scrape /metrics| AnalyticsS
+    Prometheus -->|Scrape /metrics| UserS
+    Prometheus -->|Scrape /metrics| NotificationS
+
+    Grafana[Grafana]:::monitor -->|Query| Prometheus
+    Grafana -->|Query| Loki[Loki]:::monitor
+    Promtail[Promtail]:::monitor -->|Push Logs| Loki
+    DockerLogs[(Docker Logs)] --> Promtail
 ```
 
 Mỗi microservice có cơ sở dữ liệu riêng (database-per-service pattern), giao tiếp đồng bộ qua HTTP (qua gateway) và bất đồng bộ qua RabbitMQ (message queue pattern). Redis đóng vai trò cache cho URL shortener. Gateway đóng vai trò API gateway duy nhất, chịu trách nhiệm xác thực JWT, rate limiting, circuit breaker, và thu thập metrics.
 
 ---
 
-## 2. Docker Compose — Môi Trường Phát Triển
-
-File `docker-compose.yml` định nghĩa toàn bộ 21 containers cho môi trường phát triển local. Dưới đây là phân tích chi tiết từng khía cạnh.
-
-### 2.1. Danh Sách 21 Containers
-
-| STT | Container | Image | Chức Năng | Cổng Ngoài |
-|-----|-----------|-------|-----------|------------|
-| 1 | `url_db` | postgres:16-alpine | Database URL Service | 5432 |
-| 2 | `analytics_db` | postgres:16-alpine | Database Analytics Service | 5433 |
-| 3 | `user_db` | postgres:16-alpine | Database User Service | 5434 |
-| 4 | `notification_db` | postgres:16-alpine | Database Notification Service | 5435 |
-| 5 | `adminer` | adminer:latest | GUI quản lý database | 8090 |
-| 6 | `rabbitmq` | rabbitmq:3.13-management-alpine | Message broker | 5672, 15672 |
-| 7 | `redis` | redis:7-alpine | Cache (ephemeral) | 6379 |
-| 8 | `nginx` | nginx:1.27-alpine | Reverse proxy | 80 |
-| 9 | `url-service` | Build local | Microservice URL | 8081 |
-| 10 | `analytics-service` | Build local | Microservice Analytics | 8082 |
-| 11 | `user-service` | Build local | Microservice User | 8083 |
-| 12 | `notification-service` | Build local | Microservice Notification | 8084 |
-| 13 | `gateway` | Build local | API Gateway | 8080 |
-| 14 | `frontend` | Build local | Vite React App | 5173 |
-| 15 | `prometheus` | prom/prometheus:v2.53.0 | Metrics collection | 9090 |
-| 16 | `grafana` | grafana/grafana:11.1.0 | Dashboard & visualization | 3000 |
-| 17 | `loki` | grafana/loki:2.9.1 | Log aggregation | 3100 |
-| 18 | `promtail` | grafana/promtail:latest | Log collection | 9080 (internal) |
-
-**Tổng cộng: 18 services (21 containers nếu tính các replicas không được explicit nhưng qua build).**
-
-Thực tế mỗi service `build:` tạo ra một container, như vậy có thể coi 18 containers được định nghĩa trong file docker-compose.
-
-### 2.2. Images và Tags
-
-**Images từ Docker Hub:**
-
-| Image | Tag | Kích Thước Ước Tính | Ghi Chú |
-|-------|-----|---------------------|---------|
-| `postgres` | `16-alpine` | ~90 MB | Alpine-based, nhẹ hơn 50% so với full image |
-| `redis` | `7-alpine` | ~12 MB | Phiên bản 7 mới nhất, alpine tối ưu |
-| `rabbitmq` | `3.13-management-alpine` | ~100 MB | Bao gồm management plugin |
-| `nginx` | `1.27-alpine` | ~10 MB | Phiên bản Nginx mới nhất |
-| `adminer` | `latest` | ~30 MB | Công cụ quản trị DB nhẹ |
-| `prom/prometheus` | `v2.53.0` | ~200 MB | Prometheus server |
-| `grafana/grafana` | `11.1.0` | ~300 MB | Grafana với đầy đủ plugins |
-| `grafana/loki` | `2.9.1` | ~150 MB | Loki log aggregator |
-| `grafana/promtail` | `latest` | ~100 MB | Promtail log collector |
-
-**Images build local:**
-
-| Service | Context | Dockerfile | Base Image |
-|---------|---------|------------|------------|
-| `url-service` | `.` | services/url-service/Dockerfile | golang:1.23-alpine → alpine:latest |
-| `analytics-service` | `.` | services/analytics-service/Dockerfile | golang:1.23-alpine → alpine:latest |
-| `user-service` | `.` | services/user-service/Dockerfile | golang:1.23-alpine → alpine:latest |
-| `notification-service` | `.` | services/notification-service/Dockerfile | golang:1.23-alpine → alpine:latest |
-| `gateway` | `.` | gateway/Dockerfile | golang:1.23-alpine → alpine:latest |
-| `frontend` | `.` | frontend/Dockerfile | node:22-alpine |
-
-### 2.3. Port Mapping
-
-| Container | Cổng Trong Container | Cổng Host | Giao Thức | Mục Đích |
-|-----------|---------------------|-----------|------------|----------|
-| url_db | 5432 | 5432 | TCP | PostgreSQL URL |
-| analytics_db | 5432 | 5433 | TCP | PostgreSQL Analytics |
-| user_db | 5432 | 5434 | TCP | PostgreSQL User |
-| notification_db | 5432 | 5435 | TCP | PostgreSQL Notification |
-| adminer | 8080 | 8090 | TCP | Web UI Adminer |
-| rabbitmq | 5672 | 5672 | TCP | AMQP protocol |
-| rabbitmq | 15672 | 15672 | TCP | Management UI |
-| redis | 6379 | 6379 | TCP | Redis protocol |
-| nginx | 80 | 80 | TCP | HTTP reverse proxy |
-| url-service | 8080 | 8081 | TCP | HTTP API |
-| analytics-service | 8080 | 8082 | TCP | HTTP API |
-| user-service | 8080 | 8083 | TCP | HTTP API |
-| notification-service | 8080 | 8084 | TCP | HTTP API |
-| gateway | 8080 | 8080 | TCP | HTTP API chính |
-| frontend | 5173 | 5173 | TCP | Vite dev server |
-| prometheus | 9090 | 9090 | TCP | Web UI Prometheus |
-| grafana | 3000 | 3000 | TCP | Web UI Grafana |
-| loki | 3100 | 3100 | TCP | HTTP API Loki |
-
-**Phân tích port mapping:**
-- Các PostgreSQL instance dùng cùng cổng internal 5432 nhưng map ra các cổng host khác nhau (5432-5435)
-- RabbitMQ expose 2 cổng: 5672 cho AMQP và 15672 cho Management UI
-- Gateway chiếm cổng 8080 (standard cho API gateway)
-- Frontend chiếm 5173 (Vite mặc định)
-- Ports monitoring: Prometheus 9090, Grafana 3000, Loki 3100
-- Nginx chiếm cổng 80 (HTTP chuẩn)
-
-### 2.4. Networks
-
-Docker Compose định nghĩa một network duy nhất:
-
-```yaml
-networks:
-  url-shortener:
-    driver: bridge
-```
-
-**Phân tích:**
-- Driver: `bridge` — network bridge mặc định, phù hợp cho single-host development
-- Tất cả 18 containers đều thuộc cùng một network `url-shortener`
-- DNS resolution nội bộ: mỗi container có thể truy cập container khác qua service name
-- Không có network isolation giữa các tầng (app, db, monitoring đều chung một network)
-
-**Ưu điểm:** Đơn giản, dễ debug, tất cả containers đều giao tiếp được với nhau.
-
-**Nhược điểm:** Thiếu security segmentation, không phản ánh kiến trúc production.
-
-**Khuyến nghị cho staging/production:** Tách thành ít nhất 3 networks:
-1. `frontend-net`: Nginx, Gateway, Frontend
-2. `backend-net`: Gateway, Services, Redis, RabbitMQ
-3. `database-net`: Services, Databases
-4. `monitoring-net`: Prometheus, Grafana, Loki, Promtail
-
-### 2.5. Volumes
-
-Docker Compose định nghĩa 8 named volumes cho persistent data:
-
-```yaml
-volumes:
-  url_db_data:
-  analytics_db_data:
-  user_db_data:
-  notification_db_data:
-  rabbitmq_data:
-  redis_data:
-  prometheus_data:
-  grafana_data:
-```
-
-**Phân Tích Chi Tiết:**
-
-| Volume | Mount Point | Dung Lượng Mặc Định | Dữ Liệu |
-|--------|------------|---------------------|---------|
-| `url_db_data` | /var/lib/postgresql/data | ~20 GB (default) | URL mappings, users, links |
-| `analytics_db_data` | /var/lib/postgresql/data | ~20 GB | Click events, analytics |
-| `user_db_data` | /var/lib/postgresql/data | ~20 GB | User accounts, profiles |
-| `notification_db_data` | /var/lib/postgresql/data | ~20 GB | Notifications, templates |
-| `rabbitmq_data` | /var/lib/rabbitmq | ~1 GB | Message queues, exchanges |
-| `redis_data` | /data | ~100 MB | Cache entries (có thể bỏ qua) |
-| `prometheus_data` | /prometheus | ~1 GB | Time-series metrics |
-| `grafana_data` | /var/lib/grafana | ~100 MB | Dashboards, settings |
-
-**Bind mounts (file cấu hình):**
-
-| Host Path | Container Path | Mode |
-|-----------|---------------|------|
-| ./nginx/nginx.conf | /etc/nginx/nginx.conf | ro |
-| ./monitoring/prometheus.yml | /etc/prometheus/prometheus.yml | ro |
-| ./monitoring/grafana/provisioning | /etc/grafana/provisioning | ro |
-| ./monitoring/loki-config.yml | /etc/loki/local-config.yaml | ro |
-| ./monitoring/promtail-config.yml | /etc/promtail/config.yml | ro |
-| /var/run/docker.sock | /var/run/docker.sock | ro |
-| /var/lib/docker/containers | /var/lib/docker/containers | ro |
-
-**Phân tích volumes:**
-- 8 named volumes cho persistent data — tất cả đều dùng driver local (mặc định)
-- Bind mounts cho configuration files — cho phép hot-reload cấu hình
-- Promtail cần access vào Docker socket và containers directory để đọc logs
-- Redis volume tồn tại nhưng về mặt chức năng là ephemeral (`--save "" --appendonly no`)
-
-### 2.6. Depends On và Điều Kiện Khởi Động
-
-Docker Compose v2 hỗ trợ `condition` trong `depends_on`. Dự án sử dụng 3 loại condition:
-
-**service_healthy — Chờ đến khi health check pass:**
-
-| Service | Depends On | Condition | Y Nghĩa |
-|---------|-----------|-----------|----------|
-| url-service | url_db | service_healthy | Chờ PostgreSQL url_db sẵn sàng |
-| url-service | redis | service_healthy | Chờ Redis sẵn sàng |
-| url-service | rabbitmq | service_healthy | Chờ RabbitMQ sẵn sàng |
-| analytics-service | analytics_db | service_healthy | Chờ PostgreSQL sẵn sàng |
-| analytics-service | rabbitmq | service_healthy | Chờ RabbitMQ sẵn sàng |
-| user-service | user_db | service_healthy | Chờ PostgreSQL sẵn sàng |
-| notification-service | notification_db | service_healthy | Chờ PostgreSQL sẵn sàng |
-| notification-service | rabbitmq | service_healthy | Chờ RabbitMQ sẵn sàng |
-| gateway | url-service | service_healthy | Chờ URL service sẵn sàng |
-| gateway | analytics-service | service_healthy | Chờ Analytics service sẵn sàng |
-| gateway | user-service | service_healthy | Chờ User service sẵn sàng |
-| gateway | notification-service | service_healthy | Chờ Notification service sẵn sàng |
-| nginx | gateway | service_healthy | Chờ Gateway sẵn sàng |
-| frontend | gateway | service_healthy | Chờ Gateway sẵn sàng |
-
-**service_started — Chỉ cần container start (không cần health):**
-
-| Service | Depends On | Condition |
-|---------|-----------|-----------|
-| nginx | frontend | service_started |
-
-**Không có condition — Chỉ cần container tồn tại:**
-
-| Service | Depends On |
-|---------|-----------|
-| prometheus | gateway |
-| grafana | prometheus, loki |
-| promtail | loki |
-
-**Phân tích dependency chain:**
-```
-PostgreSQL/Redis/RabbitMQ
-    → Microservices (url, analytics, user, notification)
-        → Gateway
-            → Nginx & Frontend
-```
-
-Đây là dependency graph chính xác, đảm bảo startup order đúng:
-1. Databases và infrastructure (PostgreSQL, Redis, RabbitMQ)
-2. Microservices (cần DB và message broker)
-3. Gateway (cần tất cả services)
-4. Frontend và Nginx (cần Gateway)
-
-### 2.7. Environment Variables
-
-**Database Services (PostgreSQL):**
-
-Mỗi PostgreSQL instance dùng 3 biến môi trường:
-- `POSTGRES_DB`: Tên database (urldb, analyticsdb, userdb, notificationdb)
-- `POSTGRES_USER`: Username (urluser, analyticsuser, useruser, notificationuser)
-- `POSTGRES_PASSWORD`: Password (urlpass, analyticspass, userpass, notificationpass)
-
-**Enumeration đầy đủ:**
-
-| Container | POSTGRES_DB | POSTGRES_USER | POSTGRES_PASSWORD |
-|-----------|-------------|---------------|-------------------|
-| url_db | urldb | urluser | urlpass |
-| analytics_db | analyticsdb | analyticsuser | analyticspass |
-| user_db | userdb | useruser | userpass |
-| notification_db | notificationdb | notificationuser | notificationpass |
-
-**RabbitMQ:**
-```yaml
-RABBITMQ_DEFAULT_USER: guest
-RABBITMQ_DEFAULT_PASS: guest
-```
-
-**Redis:**
-```yaml
-command: redis-server --save "" --appendonly no
-```
-Lưu ý: Redis chạy ở chế độ ephemeral (không persist dữ liệu).
-
-**Url Service:**
-```yaml
-DATABASE_URL: postgres://urluser:urlpass@url_db:5432/urldb?sslmode=disable
-REDIS_URL: redis://redis:6379/0
-RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-PORT: "8080"
-SHORT_URL_BASE: http://localhost/r
-JWT_SECRET: change-this-in-production-minimum-32-chars
-IP_HASH_SALT: change-this-in-production-random-salt
-```
-
-**Analytics Service:**
-```yaml
-DATABASE_URL: postgres://analyticsuser:analyticspass@analytics_db:5432/analyticsdb?sslmode=disable
-RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-PORT: "8080"
-JWT_SECRET: change-this-in-production-minimum-32-chars
-IP_HASH_SALT: change-this-in-production-random-salt
-```
-
-**User Service:**
-```yaml
-DATABASE_URL: postgres://useruser:userpass@user_db:5432/userdb?sslmode=disable
-PORT: "8080"
-JWT_SECRET: change-this-in-production-minimum-32-chars
-```
-
-**Notification Service:**
-```yaml
-DATABASE_URL: postgres://notificationuser:notificationpass@notification_db:5432/notificationdb?sslmode=disable
-RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/
-JWT_SECRET: change-this-in-production-minimum-32-chars
-PORT: "8080"
-```
-
-**Gateway:**
-```yaml
-URL_SERVICE_URL: http://url-service:8080
-ANALYTICS_SERVICE_URL: http://analytics-service:8080
-USER_SERVICE_URL: http://user-service:8080
-NOTIFICATION_SERVICE_URL: http://notification-service:8080
-REDIS_URL: redis://redis:6379/0
-JWT_SECRET: change-this-in-production-minimum-32-chars
-SHORTEN_RATE_LIMIT: "100000"
-REDIRECT_RATE_LIMIT: "100000"
-PORT: "8080"
-```
-
-**Frontend:**
-```yaml
-VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8080}
-```
-
-**Grafana:**
-```yaml
-GF_SECURITY_ADMIN_USER: admin
-GF_SECURITY_ADMIN_PASSWORD: admin
-GF_USERS_ALLOW_SIGN_UP: "false"
-GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/circuit_breaker.json
-```
-
-**Promtail:**
-```yaml
-DOCKER_API_VERSION: 1.44
-```
-
-**Phân tích bảo mật:**
-- Mật khẩu PostgreSQL được hardcode trong docker-compose.yml → KHÔNG an toàn cho production
-- JWT_SECRET giống nhau ở tất cả services → Cần tách biệt
-- `sslmode=disable` cho tất cả database URLs → Chỉ chấp nhận được trong development
-- Grafana dùng admin/admin → Cần đổi ngay khi triển khai production
-- RabbitMQ dùng guest/guest → Chỉ dùng được trong development
-- `SHORT_URL_BASE` dùng biến môi trường với default value, cho phép override
-
-### 2.8. Healthchecks
-
-Docker Compose định nghĩa healthchecks cho hầu hết services:
-
-**PostgreSQL Healthcheck (x4):**
-```yaml
-healthcheck:
-  test: ["CMD-SHELL", "pg_isready -U urluser -d urldb"]
-  interval: 5s
-  timeout: 5s
-  retries: 10
-  start_period: 10s
-```
-
-**RabbitMQ Healthcheck:**
-```yaml
-healthcheck:
-  test: ["CMD", "rabbitmq-diagnostics", "ping"]
-  interval: 10s
-  timeout: 10s
-  retries: 10
-  start_period: 20s
-```
-
-**Redis Healthcheck:**
-```yaml
-healthcheck:
-  test: ["CMD", "redis-cli", "ping"]
-  interval: 5s
-  timeout: 3s
-  retries: 10
-```
-
-**Microservices (url, analytics, user, notification) Healthcheck:**
-```yaml
-healthcheck:
-  test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-  start_period: 15s
-```
-
-**Gateway Healthcheck:**
-```yaml
-healthcheck:
-  test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-  start_period: 20s
-```
-
-**So sánh tham số healthcheck:**
-
-| Service | Interval | Timeout | Retries | Start Period |
-|---------|----------|---------|---------|-------------|
-| PostgreSQL | 5s | 5s | 10 | 10s |
-| RabbitMQ | 10s | 10s | 10 | 20s |
-| Redis | 5s | 3s | 10 | N/A |
-| url-service | 10s | 5s | 5 | 15s |
-| analytics-service | 10s | 5s | 5 | 15s |
-| user-service | 10s | 5s | 5 | 15s |
-| notification-service | 10s | 5s | 5 | 15s |
-| gateway | 10s | 5s | 5 | 20s |
-
-**Phân tích kỹ thuật:**
-- PostgreSQL: `pg_isready` là tool chuẩn, nhẹ, fast check (5s interval)
-- RabbitMQ: Cần thời gian khởi động lâu hơn (start_period: 20s), dùng `rabbitmq-diagnostics ping`
-- Redis: `redis-cli ping` → response "PONG" nếu OK
-- Go services: `wget -qO- http://localhost:8080/health` → HTTP GET đến endpoint /health. `wget` được cài sẵn trong alpine (BusyBox wget)
-- Gateway có start_period lâu nhất (20s) vì cần chờ tất cả services khởi động xong
-
-### 2.9. Restart Policies
-
-Docker Compose định nghĩa restart policies cho 4 services:
-
-```yaml
-nginx:        restart: unless-stopped
-prometheus:   restart: unless-stopped
-grafana:      restart: unless-stopped
-loki:         restart: unless-stopped
-promtail:     restart: unless-stopped
-```
-
-Các service khác (databases, microservices) KHÔNG có restart policy — mặc định là `no` (không tự restart khi fail).
-
-**Phân tích:**
-- Services monitoring và Nginx có `unless-stopped`: tự động restart trừ khi bị stop thủ công
-- Databases không có restart policy: nếu PostgreSQL crash, container sẽ không tự restart → cần thêm restart policy cho production
-- Microservices không có restart policy: nếu Go service panic, sẽ không tự động phục hồi
-
-**Khuyến nghị bổ sung restart policies:**
-- Databases nên có `restart: unless-stopped` hoặc `restart: always`
-- Microservices nên có `restart: on-failure:5` để tự restart khi crash nhưng không restart mãi mãi nếu có lỗi nghiêm trọng
+## 2. Docker Compose & Dockerfiles — Phát Triển & Build
+
+File `docker-compose.yml` định nghĩa 18 containers chạy trong một network bridge duy nhất mang tên `url-shortener`.
+
+### 2.1. Cấu Hì̀nh Chi Tiết Các Container
+
+Dưới đây là bảng tổng hợp danh sách các container, image tương ứng, cấu hình cổng (port mapping) và cơ chế kiểm tra sức khỏe (healthcheck):
+
+| Container | Image & Tag | Cổng (Host:Container) | Chức Năng Chính & Cơ Chế Healthcheck |
+|-----------|-------------|-----------------------|--------------------------------------|
+| `url_db` | `postgres:16-alpine` | `5432:5432` | DB URL Service. Healthcheck: `pg_isready` (5s interval, 10 retries) |
+| `analytics_db` | `postgres:16-alpine` | `5433:5432` | DB Analytics Service. Healthcheck: `pg_isready` |
+| `user_db` | `postgres:16-alpine` | `5434:5432` | DB User Service. Healthcheck: `pg_isready` |
+| `notification_db` | `postgres:16-alpine` | `5435:5432` | DB Notification Service. Healthcheck: `pg_isready` |
+| `adminer` | `adminer:latest` | `8090:8080` | GUI quản lý database. Không có healthcheck |
+| `rabbitmq` | `rabbitmq:3.13-management-alpine` | `5672:5672`, `15672:15672` | Message broker. Healthcheck: `rabbitmq-diagnostics ping` (10s interval) |
+| `redis` | `redis:7-alpine` | `6379:6379` | Ephemeral cache (`--save "" --appendonly no`). Healthcheck: `redis-cli ping` |
+| `nginx` | `nginx:1.27-alpine` | `80:80` | Reverse proxy routing. Không có healthcheck |
+| `url-service` | Build local (Go) | `8081:8080` | Microservice URL. Healthcheck: `wget /health` (10s interval, 5 retries) |
+| `analytics-service`| Build local (Go) | `8082:8080` | Microservice Analytics. Healthcheck: `wget /health` |
+| `user-service` | Build local (Go) | `8083:8080` | Microservice User. Healthcheck: `wget /health` |
+| `notification-svc` | Build local (Go) | `8084:8080` | Microservice Notification. Healthcheck: `wget /health` |
+| `gateway` | Build local (Go) | `8080:8080` | API Gateway chính. Healthcheck: `wget /health` |
+| `frontend` | Build local (Node) | `5173:5173` | React/Vite dev server. Không có healthcheck |
+| `prometheus` | `prom/prometheus:v2.53.0` | `9090:9090` | Thu thập metrics. Không có healthcheck |
+| `grafana` | `grafana/grafana:11.1.0` | `3000:3000` | Trực quan hóa dashboard. Không có healthcheck |
+| `loki` | `grafana/loki:2.9.1` | `3100:3100` | Tập hợp logs. Không có healthcheck |
+| `promtail` | `grafana/promtail:latest` | N/A (internal: 9080) | Thu thập logs từ host/socket. Không có healthcheck |
+
+### 2.2. Tài Nguyên, Phụ Thuộc và Môi Trường
+
+- **Volumes & Mounts:** Định nghĩa 8 named volumes cho việc lưu trữ dữ liệu (DBs, RabbitMQ, Redis, Prometheus, Grafana). Sử dụng bind mounts ở chế độ chỉ đọc (`ro`) cho các file cấu hình (`nginx.conf`, `prometheus.yml`, `loki-config.yml`, `promtail-config.yml`) và Docker socket (`/var/run/docker.sock` cho Promtail).
+- **Ràng Buộc Khởi Động:** Thứ tự khởi động sử dụng điều kiện `service_healthy`: 
+  Databases/Cache/Broker (Phase 0) $\rightarrow$ Microservices (Phase 1) $\rightarrow$ Gateway (Phase 2) $\rightarrow$ Frontend/Nginx (Phase 3).
+- **Biến Môi Trường:**
+  - *Databases/Broker:* Cấu hình thông tin đăng nhập mặc định (`guest/guest` cho RabbitMQ, `admin/admin` cho Grafana, credentials riêng cho từng PostgreSQL).
+  - *Go Services & Gateway:* Nhận cấu hình kết nối qua `DATABASE_URL`, `REDIS_URL`, `RABBITMQ_URL` và các cấu hình bảo mật `JWT_SECRET`, `IP_HASH_SALT`.
+- **Restart Policies:** Chỉ có Nginx và stack monitoring được gán chính sách `unless-stopped`. Các microservices và databases mặc định là `no` (không tự khởi động lại).
+
+### 2.3. Quy trình Build Docker (Dockerfiles)
+
+Các thành phần trong hệ thống được đóng gói thông qua Dockerfile riêng biệt:
+- **Go Services & Gateway:** Áp dụng quy trình build 2 giai đoạn (multi-stage build):
+  - *Giai đoạn 1 (Build):* Sử dụng `golang:1.23-alpine` làm môi trường biên dịch mã nguồn.
+  - *Giai đoạn 2 (Runtime):* Sử dụng `alpine:latest` làm môi trường chạy, chỉ sao chép file binary đã biên dịch từ Giai đoạn 1 nhằm giảm tối đa dung lượng ảnh (còn khoảng ~15 MB) và nâng cao tính bảo mật.
+  - *Khuyến nghị tối ưu:* Cấu hình build tĩnh (`CGO_ENABLED=0`), nén binary (`-ldflags="-s -w"`), thêm thư viện chứng thực SSL (`ca-certificates`), và tối ưu hóa thứ tự copy file (`go.mod` / `go.sum` trước) để tận dụng Docker layer cache.
+- **Frontend React/Vite:** 
+  - *Môi trường phát triển:* Build 1 giai đoạn trên `node:22-alpine` chạy dev mode (`npm run dev`) để hỗ trợ hot-reload.
+  - *Khuyến nghị Production:* Đóng gói multi-stage (Giai đoạn 1 build code static, Giai đoạn 2 sử dụng Nginx alpine phục vụ static assets).
+- **Phân tích kỹ thuật build:** Quy trình build sử dụng Go Workspace (`go.work`) để liên kết các module cục bộ (`gateway`, `services/*`, `shared/*`). Cần bổ sung file `.dockerignore` tại thư mục root của dự án để tránh copy thừa dữ liệu không liên quan (như node_modules, k8s manifests, logs) gây invalidate cache.
 
 ---
 
-## 3. Dockerfiles — Multi-Stage Build
+## 3. Kubernetes Manifests
 
-### 3.1. Go Services Dockerfiles
+Hệ thống được cấu trúc hóa để chạy trên Kubernetes thông qua các tài nguyên được chia nhóm.
 
-Tất cả 4 Go services (url-service, analytics-service, user-service, notification-service) và gateway đều dùng chung một cấu trúc Dockerfile multi-stage:
+### 3.1. Namespace
 
-```dockerfile
-# Stage 1: Build
-FROM golang:1.23-alpine AS builder
-WORKDIR /app
-COPY . .
-WORKDIR /app/services/url-service    # services/analytics-service, services/user-service, etc.
-RUN go build -o main .
+Toàn bộ tài nguyên được cô lập trong namespace `url-shortener` để tránh xung đột với các ứng dụng khác trong cluster.
 
-# Stage 2: Runtime
-FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/services/url-service/main .
-CMD ["./main"]
-```
+### 3.2. ConfigMap và Secrets
 
-**Phân tích kỹ thuật:**
+- **ConfigMap `app-config`:** Lưu trữ các cấu hình tĩnh và phi nhạy cảm, bao gồm các URL dịch vụ nội bộ (ví dụ: `http://url-service:8080`), cổng hoạt động, và chuỗi kết nối database có vô hiệu hóa SSL (`sslmode=disable`).
+- **Secret `app-secrets`:** Lưu trữ khóa `JWT_SECRET`.
+- **Khuyến nghị bảo mật:** Các chuỗi kết nối PostgreSQL và RabbitMQ hiện đang nằm trong ConfigMap cần được di chuyển hoàn toàn sang Secrets vì chúng chứa thông tin xác thực (username/password).
 
-| Stage | Base Image | Kích Thước | Công Cụ | Mục Đích |
-|-------|------------|-----------|---------|----------|
-| Builder | golang:1.23-alpine | ~300 MB | go, gcc, git, ca-certificates | Biên dịch Go binary |
-| Runtime | alpine:latest | ~5 MB | BusyBox, libc | Chạy binary |
+### 3.3. Infrastructure Deployments
 
-**Kích thước final image:** ~10-15 MB (binary Go ~10 MB + alpine runtime ~5 MB)
+Phần hạ tầng bao gồm Redis, RabbitMQ và 4 database PostgreSQL được định nghĩa dưới dạng các Kubernetes `Deployment` kết hợp với `Service` nội bộ (`ClusterIP`).
 
-**Ưu điểm của multi-stage build:**
-1. **Kích thước image nhỏ:** Chỉ binary Go + alpine, không cần Go toolchain ở runtime
-2. **Bảo mật:** Không chứa source code, compiler, hay development tools
-3. **Hiệu năng:** Alpine là base image nhẹ nhất
-4. **Caching:** Docker layer caching tối ưu cho CI/CD
+| Dịch Vụ | Loại Service | Cổng Khai Báo |
+|---------|--------------|---------------|
+| `redis` | ClusterIP | 6379 |
+| `rabbitmq` | ClusterIP | 5672 (AMQP), 15672 (Management UI) |
+| Databases (x4) | ClusterIP | 5432 |
 
-**Nhược điểm / điểm cần cải thiện:**
-1. **Thiếu CGO_ENABLED=0:** Nên set `CGO_ENABLED=0` để đảm bảo build tĩnh (static binary)
-2. **Thiếu -ldflags:** Nên set `-ldflags="-s -w"` để strip binary, giảm kích thước
-3. **Thiếu ca-certificates:** Nếu service gọi HTTPS external APIs, cần cài ca-certificates
-4. **COPY context không tối ưu:** `COPY . .` ở builder stage copy toàn bộ project, bao gồm frontend/, monitoring/, k8s/... Làm build chậm hơn
-5. **Không dùng .dockerignore:** Không có file .dockerignore để exclude file không cần thiết
+Việc sử dụng tài nguyên loại `Deployment` đi kèm lưu trữ dạng `emptyDir` cho PostgreSQL là một rủi ro cực lớn. Khi các Pod bị tắt hoặc lên lịch lại (rescheduled), toàn bộ dữ liệu ghi nhận trong database sẽ bị xóa sạch. Databases trong môi trường thực tế bắt buộc phải sử dụng `StatefulSet` kết hợp với `PersistentVolumeClaim` (PVC) như phân tích ở mục 3.6.
 
-**Dockerfile tối ưu hóa (recommendation):**
+### 3.4. Application Deployments
 
-```dockerfile
-FROM golang:1.23-alpine AS builder
-RUN apk add --no-cache ca-certificates
-WORKDIR /app
-COPY go.work go.sum go.work.sum ./
-COPY shared/ ./shared/
-COPY services/url-service/ ./services/url-service/
-WORKDIR /app/services/url-service
-RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o main .
+Khai báo tài nguyên cho các ứng dụng nghiệp vụ:
 
-FROM alpine:latest
-RUN apk add --no-cache ca-certificates
-WORKDIR /app
-COPY --from=builder /app/services/url-service/main .
-COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
-EXPOSE 8080
-CMD ["./main"]
-```
+| Tên Service | Số Lượng Pod (Replicas) | Image Pull Policy | Cách Expose |
+|-------------|-------------------------|-------------------|-------------|
+| `url-service` | 3 | IfNotPresent | ClusterIP |
+| `analytics-service` | 1 | IfNotPresent | ClusterIP |
+| `user-service` | 1 | IfNotPresent | ClusterIP |
+| `notification-service` | 1 | IfNotPresent | ClusterIP |
+| `gateway` | 2 | IfNotPresent | NodePort (Cổng host: 30080) |
 
-### 3.2. Gateway Dockerfile
+API Gateway là điểm tiếp nhận duy nhất từ bên ngoài qua NodePort `30080`, từ đó định tuyến lưu lượng đến các service nội bộ khác.
 
-Gateway dùng cấu trúc Dockerfile tương tự Go services:
+### 3.5. Services và NodePort
 
-```dockerfile
-FROM golang:1.23-alpine AS builder
-WORKDIR /app
-COPY . .
-WORKDIR /app/gateway
-RUN go build -o main .
+Mô hình mạng thiết lập toàn bộ các service phụ trợ và microservice chạy ẩn dưới dạng `ClusterIP`. Chỉ có API Gateway được cấu hình `NodePort` để mở luồng traffic từ bên ngoài đi vào hệ thống.
 
-FROM alpine:latest
-WORKDIR /app
-COPY --from=builder /app/gateway/main .
-CMD ["./main"]
-```
+### 3.6. Phân Tích Deployment vs StatefulSet
 
-**Điểm khác biệt:**
-- WORKDIR là `/app/gateway` thay vì `/app/services/*`
-- Binary nằm ở `/app/gateway/main`
-
-### 3.3. Frontend Dockerfile
-
-Frontend dùng single-stage build (không multi-stage):
-
-```dockerfile
-FROM node:22-alpine
-WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm install
-COPY frontend/ ./
-EXPOSE 5173
-CMD ["npm", "run", "dev"]
-```
-
-**Phân tích:**
-- **Base image:** node:22-alpine — Node.js 22 LTS trên Alpine
-- **Cache optimization:** Copy package*.json trước, chạy npm install, sau đó copy source — tận dụng Docker layer caching
-- **Chạy dev mode:** `npm run dev` — chạy Vite dev server, hot-reload
-- **Không có multi-stage:** Phù hợp cho development, nhưng cho production nên có nginx stage để serve static files
-
-**Khuyến nghị cho production:**
-```dockerfile
-FROM node:22-alpine AS builder
-WORKDIR /app
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-FROM nginx:1.27-alpine
-COPY --from=builder /app/dist/ /usr/share/nginx/html/
-COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
-EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
-```
-
-### 3.4. Phân Tích Kỹ Thuật Build
-
-**Go Build Process:**
-- `go build -o main .` — Build Go binary với tên main
-- Dùng go.work để resolve multi-module workspace
-- go.work bao gồm: gateway, services/*, shared/*
-- Không có CGO flags — mặc định CGO_ENABLED=1 (cần cho một số trường hợp)
-
-**Frontend Build:**
-- `npm install` — Cài dependencies từ package-lock.json
-- Vite dev server — Chạy ở chế độ development
-
-**Build Context:**
-- Docker Compose context: `.` (root project directory)
-- Frontend context: `.` (root project directory)
-- Tất cả services dùng chung context `.` và dockerfile path riêng
-
-**Điểm yếu trong cấu trúc build hiện tại:**
-1. **Cache thấp:** COPY . . copy toàn bộ project, bất kỳ thay đổi nào cũng invalidate cache
-2. **Không tận dụng Go module cache:** Mỗi lần build đều download lại dependencies
-3. **Không có .dockerignore:** Docker context quá lớn
-4. **Không có linter stage:** Nên thêm `go vet`, `golangci-lint` trong builder stage
-5. **Không có test stage:** Nên thêm `go test` trong Dockerfile để fail build sớm nếu test lỗi
+Hạ tầng hiện tại cần được nâng cấp cho môi trường sản xuất theo các tiêu chuẩn sau:
+- **Stateless Services:** (Microservices & Gateway) tiếp tục duy trì dạng `Deployment` để dễ dàng nâng scale và roll-out.
+- **Stateful Services:** (PostgreSQL, RabbitMQ) cần chuyển đổi sang `StatefulSet` để đảm bảo tính định danh mạng cố định (ví dụ: `url-db-0`) và liên kết chặt chẽ với các volume lưu trữ vật lý độc lập thông qua `volumeClaimTemplates`.
 
 ---
 
-## 4. Kubernetes Manifests
+## 4. Health Checks — Liveness và Readiness
 
-Hệ thống sử dụng 4 file YAML cho Kubernetes deployment:
-1. `k8s/namespace.yaml` — Namespace
-2. `k8s/config.yaml` — ConfigMap + Secret
-3. `k8s/infra.yaml` — Infrastructure (Redis, RabbitMQ, Databases)
-4. `k8s/apps.yaml` — Application services
+### 4.1. ReadinessProbe trong Docker Compose
 
-### 4.1. Namespace — `namespace.yaml`
+Docker Compose sử dụng thẻ `healthcheck` để giám sát sức khỏe container. Nếu lệnh kiểm tra trả về mã lỗi khác `0`, container sẽ mang trạng thái "unhealthy", giúp trì hoãn các tiến trình phụ thuộc khởi động sau. Tuy nhiên, nó không tự động restart container bị lỗi trừ phi được cấu hình đi kèm chính sách restart cụ thể.
 
-```yaml
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: url-shortener
-```
+### 4.2. ReadinessProbe trong Kubernetes
 
-**Phân tích:**
-- Namespace đơn giản, chỉ có tên `url-shortener`
-- Cô lập tài nguyên cho dự án trong cluster
-- Tất cả các manifest khác đều reference namespace này
-- **Không có labels:** Nên thêm labels như `app.kubernetes.io/name: url-shortener`, `app.kubernetes.io/part-of: url-shortener`
-
-### 4.2. ConfigMap và Secrets — `config.yaml`
-
-**ConfigMap `app-config`:**
-
-| Key | Value | Sử Dụng Bởi |
-|-----|-------|-------------|
-| PORT | 8080 | Tất cả Go services |
-| SHORT_URL_BASE | http://localhost:30080/r | url-service |
-| IP_HASH_SALT | change-this-in-production-random-salt | url-service, analytics-service |
-| URL_SERVICE_URL | http://url-service:8080 | gateway |
-| ANALYTICS_SERVICE_URL | http://analytics-service:8080 | gateway |
-| USER_SERVICE_URL | http://user-service:8080 | gateway |
-| NOTIFICATION_SERVICE_URL | http://notification-service:8080 | gateway |
-| REDIS_URL | redis://redis:6379/0 | url-service, gateway |
-| RABBITMQ_URL | amqp://guest:guest@rabbitmq:5672/ | url-service, analytics-service, notification-service |
-| URL_DATABASE_URL | postgres://urluser:urlpass@url-db:5432/urldb?sslmode=disable | url-service |
-| ANALYTICS_DATABASE_URL | postgres://analyticsuser:analyticspass@analytics-db:5432/analyticsdb?sslmode=disable | analytics-service |
-| USER_DATABASE_URL | postgres://useruser:userpass@user-db:5432/userdb?sslmode=disable | user-service |
-| NOTIFICATION_DATABASE_URL | postgres://notificationuser:notificationpass@notification-db:5432/notificationdb?sslmode=disable | notification-service |
-
-**Secret `app-secrets`:**
-
-| Key | Value | Sử Dụng Bởi |
-|-----|-------|-------------|
-| JWT_SECRET | change-this-in-production-minimum-32-chars | Tất cả services |
-
-**Phân tích ConfigMap:**
-- ConfigMap chứa tất cả cấu hình non-sensitive
-- Dùng kiểu `stringData` cho Secret (không base64-encode trong YAML)
-- `SHORT_URL_BASE` trong K8s trỏ đến NodePort 30080 (khác với Docker Compose dùng port 80)
-- Database hostnames dùng Kubernetes convention: `url-db` thay vì `url_db` (Docker Compose)
-
-**Vấn đề bảo mật:**
-- Database URLs trong ConfigMap chứa usernames và passwords! Đây là sensitive data, cần chuyển sang Secrets
-- JWT_SECRET trong Secret chưa đủ mạnh cho production
-- RabbitMQ guest/guest credentials nên được đặt trong Secrets
-- IP_HASH_SALT cũng là sensitive data, nên trong Secrets
-
-**Cấu trúc cải thiện khuyến nghị:**
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: app-secrets
-  namespace: url-shortener
-type: Opaque
-stringData:
-  JWT_SECRET: "change-this-in-production-minimum-32-chars"
-  IP_HASH_SALT: "change-this-in-production-random-salt"
-  URL_DATABASE_URL: "postgres://urluser:urlpass@url-db:5432/urldb?sslmode=disable"
-  ANALYTICS_DATABASE_URL: "postgres://analyticsuser:analyticspass@analytics-db:5432/analyticsdb?sslmode=disable"
-  USER_DATABASE_URL: "postgres://useruser:userpass@user-db:5432/userdb?sslmode=disable"
-  NOTIFICATION_DATABASE_URL: "postgres://notificationuser:notificationpass@notification-db:5432/notificationdb?sslmode=disable"
-  RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-```
-
-### 4.3. Infrastructure Deployments — `infra.yaml`
-
-File `infra.yaml` chứa 6 Deployments và 6 Services cho infrastructure layer.
-
-**Redis:**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: redis
-  namespace: url-shortener
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: redis
-  template:
-    metadata:
-      labels:
-        app: redis
-    spec:
-      containers:
-        - name: redis
-          image: redis:7-alpine
-          args: ["redis-server", "--save", "", "--appendonly", "no"]
-          ports:
-            - containerPort: 6379
-          readinessProbe:
-            exec:
-              command: ["redis-cli", "ping"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
-```
-
-**RabbitMQ:**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: rabbitmq
-  namespace: url-shortener
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: rabbitmq
-  template:
-    metadata:
-      labels:
-        app: rabbitmq
-    spec:
-      containers:
-        - name: rabbitmq
-          image: rabbitmq:3.13-management-alpine
-          env:
-            - name: RABBITMQ_DEFAULT_USER
-              value: guest
-            - name: RABBITMQ_DEFAULT_PASS
-              value: guest
-          ports:
-            - containerPort: 5672
-            - containerPort: 15672
-          readinessProbe:
-            exec:
-              command: ["rabbitmq-diagnostics", "ping"]
-            initialDelaySeconds: 20
-            periodSeconds: 10
-```
-
-**PostgreSQL Databases (url-db, analytics-db, user-db, notification-db):**
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: url-db
-  namespace: url-shortener
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: url-db
-  template:
-    metadata:
-      labels:
-        app: url-db
-    spec:
-      containers:
-        - name: postgres
-          image: postgres:16-alpine
-          env:
-            - name: POSTGRES_DB
-              value: urldb
-            - name: POSTGRES_USER
-              value: urluser
-            - name: POSTGRES_PASSWORD
-              value: urlpass
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "urluser", "-d", "urldb"]
-            initialDelaySeconds: 10
-            periodSeconds: 5
-      volumes:
-        - name: data
-          emptyDir: {}
-```
-
-**Phân tích chi tiết các Service definitions:**
-
-| Service | Type | Port | TargetPort | Selector |
-|---------|------|------|------------|----------|
-| redis | ClusterIP (default) | 6379 | 6379 | app: redis |
-| rabbitmq | ClusterIP (default) | 5672 (amqp), 15672 (management) | 5672, 15672 | app: rabbitmq |
-| url-db | ClusterIP (default) | 5432 | 5432 | app: url-db |
-| analytics-db | ClusterIP (default) | 5432 | 5432 | app: analytics-db |
-| user-db | ClusterIP (default) | 5432 | 5432 | app: user-db |
-| notification-db | ClusterIP (default) | 5432 | 5432 | app: notification-db |
-
-**Vấn đề quan trọng — emptyDir cho databases:**
-```yaml
-volumes:
-  - name: data
-    emptyDir: {}
-```
-
-**Đây là một vấn đề CRITICAL cho production:** `emptyDir` là ephemeral storage — khi Pod restart, tất cả dữ liệu database sẽ bị mất! Trong Kubernetes production, databases cần:
-1. **PersistentVolumeClaim** (PVC) với PersistentVolume (PV)
-2. **StatefulSet** thay vì Deployment (để có stable identity)
-3. HostPath volume ít nhất cho single-node cluster
-
-**Phân tích emptyDir:**
-- Redis: Có thể chấp nhận được vì đang chạy ephemeral mode (`--save "" --appendonly no`)
-- PostgreSQL: KHÔNG THỂ chấp nhận — mất dữ liệu khi Pod restart
-- Có thể đây là setup cho Kubernetes development (Minikube, kind), không phải production
-
-### 4.4. Application Deployments — `apps.yaml`
-
-File `apps.yaml` chứa 5 Deployments, 5 Services cho application layer.
-
-**Deployment summary:**
-
-| Deployment | Replicas | Image | ImagePullPolicy | Service Type |
-|-----------|---------|-------|----------------|-------------|
-| url-service | 3 | url-shortener-microservices-url-service:latest | IfNotPresent | ClusterIP |
-| analytics-service | 1 | url-shortener-microservices-analytics-service:latest | IfNotPresent | ClusterIP |
-| user-service | 1 | url-shortener-microservices-user-service:latest | IfNotPresent | ClusterIP |
-| notification-service | 1 | url-shortener-microservices-notification-service:latest | IfNotPresent | ClusterIP |
-| gateway | 2 | url-shortener-microservices-gateway:latest | IfNotPresent | NodePort (30080) |
-
-**Phân tích replicas:**
-- `url-service` có 3 replicas — service quan trọng nhất (xử lý URL shortening)
-- `gateway` có 2 replicas — API gateway cần HA
-- `analytics-service`, `user-service`, `notification-service` mỗi service 1 replica — chưa có HA
-
-**Phân tích ImagePullPolicy:**
-- `IfNotPresent`: Chỉ pull image nếu chưa có local → Phù hợp cho development
-- Trong production CI/CD, nên dùng `Always` để đảm bảo luôn lấy đúng version mới
-
-**Environment variables từ ConfigMap:**
-
-url-service sử dụng các env từ ConfigMap:
-```yaml
-env:
-  - name: DATABASE_URL
-    valueFrom:
-      configMapKeyRef:
-        name: app-config
-        key: URL_DATABASE_URL
-  - name: REDIS_URL
-    valueFrom:
-      configMapKeyRef:
-        name: app-config
-        key: REDIS_URL
-  - name: RABBITMQ_URL
-    valueFrom:
-      configMapKeyRef:
-        name: app-config
-        key: RABBITMQ_URL
-  - name: JWT_SECRET
-    valueFrom:
-      secretKeyRef:
-        name: app-secrets
-        key: JWT_SECRET
-```
-
-**So sánh environment variables giữa Docker Compose và Kubernetes:**
-
-| Variable | Docker Compose | Kubernetes |
-|----------|---------------|------------|
-| DATABASE_URL | Hardcoded trong compose | ConfigMap key per service |
-| REDIS_URL | Hardcoded | ConfigMap chung |
-| RABBITMQ_URL | Hardcoded | ConfigMap chung |
-| JWT_SECRET | Hardcoded trong compose | Secret (app-secrets) |
-| SHORT_URL_BASE | env var with default | ConfigMap chung |
-| IP_HASH_SALT | Hardcoded | ConfigMap chung |
-| PORT | "8080" | ConfigMap chung |
-| Service URLs | Hardcoded | ConfigMap chung |
-
-**Gateway Service — NodePort:**
-
-```yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: gateway
-  namespace: url-shortener
-spec:
-  type: NodePort
-  selector:
-    app: gateway
-  ports:
-    - port: 8080
-      targetPort: 8080
-      nodePort: 30080
-```
-
-Là service duy nhất dùng NodePort, expose ra ngoài cluster qua port 30080. Các service khác dùng ClusterIP (internal only).
-
-### 4.5. Services và NodePort
-
-**Service types trong hệ thống:**
-
-| Type | Services | Mô Tả |
-|------|----------|-------|
-| ClusterIP | redis, rabbitmq, url-db, analytics-db, user-db, notification-db, url-service, analytics-service, user-service, notification-service | Chỉ truy cập nội bộ cluster |
-| NodePort | gateway (30080) | Truy cập từ ngoài cluster |
-
-**Phân tích kiến trúc mạng Kubernetes:**
-- Gateway là cổng vào duy nhất (NodePort 30080)
-- Gateway gọi các services nội bộ qua ClusterIP
-- Redis và RabbitMQ cũng là ClusterIP, chỉ được services gọi nội bộ
-- Không có Ingress controller → cần thêm cho production
-
-**Các port được expose trong Kubernetes:**
-
-| Pod | Container Port | Service Port | Type |
-|-----|---------------|-------------|------|
-| redis | 6379 | 6379 | ClusterIP |
-| rabbitmq | 5672, 15672 | 5672, 15672 | ClusterIP |
-| url-db | 5432 | 5432 | ClusterIP |
-| analytics-db | 5432 | 5432 | ClusterIP |
-| user-db | 5432 | 5432 | ClusterIP |
-| notification-db | 5432 | 5432 | ClusterIP |
-| url-service | 8080 | 8080 | ClusterIP |
-| analytics-service | 8080 | 8080 | ClusterIP |
-| user-service | 8080 | 8080 | ClusterIP |
-| notification-service | 8080 | 8080 | ClusterIP |
-| gateway | 8080 | 8080 (nodePort: 30080) | NodePort |
-
-### 4.6. Phân Tích Deployment vs StatefulSet
-
-**Hiện tại: Tất cả đều dùng Deployment**
-
-| Resource | Type | Replicas | Storage |
-|----------|------|----------|---------|
-| Redis | Deployment | 1 | emptyDir (OK — ephemeral) |
-| RabbitMQ | Deployment | 1 | none |
-| PostgreSQL (x4) | Deployment | 1 | emptyDir (PROBLEM!) |
-| url-service | Deployment | 3 | stateless (OK) |
-| analytics-service | Deployment | 1 | stateless (OK) |
-| user-service | Deployment | 1 | stateless (OK) |
-| notification-service | Deployment | 1 | stateless (OK) |
-| gateway | Deployment | 2 | stateless (OK) |
-
-**Khi nào cần StatefulSet:**
-
-StatefulSet cần thiết khi:
-1. **Dữ liệu cần persistent:** PostgreSQL cần StatefulSet + PVC
-2. **Stable network identity:** Cần hostname ổn định (e.g., `url-db-0.url-db`)
-3. **Ordered startup/shutdown:** Cần startup theo thứ tự
-4. **Clone/PVC template:** Mỗi replica có PVC riêng
-
-**Recommendation cho databases:**
-
-```yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: url-db
-  namespace: url-shortener
-spec:
-  serviceName: url-db
-  replicas: 1
-  selector:
-    matchLabels:
-      app: url-db
-  template:
-    metadata:
-      labels:
-        app: url-db
-    spec:
-      containers:
-        - name: postgres
-          image: postgres:16-alpine
-          env:
-            - name: POSTGRES_DB
-              value: urldb
-            - name: POSTGRES_USER
-              value: urluser
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: db-secrets
-                  key: url-db-password
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
-            limits:
-              memory: "1Gi"
-              cpu: "1"
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        resources:
-          requests:
-            storage: 10Gi
-        storageClassName: standard
-```
-
----
-
-## 5. Health Checks — Liveness và Readiness
-
-Hệ thống triển khai health checks ở cả Docker Compose và Kubernetes, nhưng với cách tiếp cận khác nhau.
-
-### 5.1. ReadinessProbe trong Docker Compose
-
-Docker Compose chỉ hỗ trợ `healthcheck` (tương đương readiness probe), không có liveness probe riêng.
-
-```yaml
-healthcheck:
-  test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
-  interval: 10s
-  timeout: 5s
-  retries: 5
-  start_period: 15s
-```
-
-**Cơ chế hoạt động:**
-1. Docker engine thực thi test command mỗi `interval` giây
-2. Nếu command exit code != 0, đánh dấu là unhealthy
-3. Sau `retries` lần fail, container được đánh dấu "unhealthy"
-4. `depends_on` với `condition: service_healthy` chờ đến khi container healthy
-5. Docker Compose KHÔNG tự động restart container khi unhealthy (trừ khi có restart policy)
-
-### 5.2. ReadinessProbe trong Kubernetes
-
-Kubernetes sử dụng `readinessProbe` (không phải `livenessProbe`):
-
-```yaml
-readinessProbe:
-  httpGet:
-    path: /health
-    port: 8080
-  initialDelaySeconds: 10
-  periodSeconds: 5
-```
-
-**Các loại probe trong hệ thống:**
-
-**HTTP GET probe (Go services, gateway):**
-```yaml
-readinessProbe:
-  httpGet:
-    path: /health    # HTTP GET /health endpoint
-    port: 8080       # Port để gọi
-  initialDelaySeconds: 10   # Chờ 10s trước khi probe lần đầu
-  periodSeconds: 5          # Probe mỗi 5 giây
-```
-
-**Exec probe (Redis):**
-```yaml
-readinessProbe:
-  exec:
-    command: ["redis-cli", "ping"]
-  initialDelaySeconds: 5
-  periodSeconds: 5
-```
-
-**Exec probe (RabbitMQ):**
-```yaml
-readinessProbe:
-  exec:
-    command: ["rabbitmq-diagnostics", "ping"]
-  initialDelaySeconds: 20
-  periodSeconds: 10
-```
-
-**Exec probe (PostgreSQL):**
-```yaml
-readinessProbe:
-  exec:
-    command: ["pg_isready", "-U", "urluser", "-d", "urldb"]
-  initialDelaySeconds: 10
-  periodSeconds: 5
-```
+Kubernetes sử dụng `readinessProbe` để kiểm tra khả năng sẵn sàng nhận tải của Pod. Nếu probe thất bại, Pod sẽ bị gỡ bỏ khỏi danh sách endpoint của Service, ngắt toàn bộ traffic đi vào nó.
+- **Microservices & Gateway:** Thực hiện HTTP GET đến endpoint `/health` trên cổng `8080`.
+- **Redis / RabbitMQ / Postgres:** Sử dụng các lệnh kiểm tra nội bộ thông qua cơ chế `exec` (`redis-cli ping`, `rabbitmq-diagnostics ping`, và `pg_isready`).
 
 ### 5.3. So Sánh và Đối Chiếu
 
-| Aspect | Docker Compose Healthcheck | Kubernetes ReadinessProbe |
-|--------|--------------------------|---------------------------|
-| **Mục đích** | Thông báo trạng thái container | Quyết định có gửi traffic vào Pod không |
-| **Loại test** | CMD, CMD-SHELL, HTTP (wget) | exec, httpGet, tcpSocket, grpc |
-| **Interval** | Per service (5-10s) | Per service (5-10s) |
-| **Timeout** | 5-10s | Mặc định 1s (cần config nếu dài hơn) |
-| **Retries** | 5-10 lần | 3 lần (mặc định) |
-| **Start period** | 10-20s | initialDelaySeconds (5-20s) |
-| **Hành vi khi fail** | Container marked unhealthy | Pod removed from Service endpoints |
-| **Restart** | Không tự động | Chỉ nếu có livenessProbe |
+| Đặc Điểm | Docker Compose Healthcheck | Kubernetes ReadinessProbe |
+|----------|--------------------------|---------------------------|
+| **Mục Tiêu** | Xác định trạng thái container | Định tuyến traffic, ngắt traffic khi lỗi |
+| **Phản Ứng** | Ghi nhận trạng thái | Gỡ Pod khỏi Service Routing |
+| **Tự Phục Hồi** | Không (cần restart policy hỗ trợ) | Chỉ thực hiện khi có thêm LivenessProbe |
 
-**Điểm yếu hiện tại:**
-1. **Không có livenessProbe:** Chỉ có readinessProbe trong Kubernetes. Nếu service bị deadlock, Pod sẽ không được restart
-2. **Không có startupProbe:** Cho services khởi động chậm, nên dùng startupProbe thay vì initialDelaySeconds lớn
-3. **Thiếu timeout configuration:** Kubernetes probe timeout mặc định 1s — quá thấp cho PostgreSQL
-4. **wget không phải lúc nào cũng có:** Alpine dùng BusyBox wget, có thể không hỗ trợ HTTPS
-
-**Khuyến nghị bổ sung livenessProbe:**
-
-```yaml
-livenessProbe:
-  httpGet:
-    path: /health
-    port: 8080
-  initialDelaySeconds: 30
-  periodSeconds: 10
-  timeoutSeconds: 5
-  failureThreshold: 3
-```
-
-Và startupProbe cho services khởi động chậm:
-
-```yaml
-startupProbe:
-  httpGet:
-    path: /health
-    port: 8080
-  initialDelaySeconds: 5
-  periodSeconds: 2
-  failureThreshold: 30   # 60s timeout
-```
+Hệ thống hiện tại trên Kubernetes hoàn toàn thiếu vắng `livenessProbe` (để tự động khởi động lại Pod khi bị treo/deadlock) và `startupProbe` (giúp bảo vệ các service khởi động chậm như RabbitMQ khỏi bị kill sớm trong quá trình init). Cần bổ sung cả hai loại probe này cho môi trường production.
 
 ---
 
-## 6. Infrastructure Components
+## 5. Infrastructure Components
 
-### 6.1. PostgreSQL (4 Instances)
+### 5.1. PostgreSQL (4 Instances)
 
-Hệ thống triển khai 4 PostgreSQL instance riêng biệt, mỗi service có database riêng (database-per-service pattern).
+- **Đặc điểm:** Triển khai độc lập cho từng service, sử dụng phiên bản `postgres:16-alpine`.
+- **Kết nối:** Chuỗi kết nối nội bộ dạng `postgres://[user]:[pass]@[db-host]:5432/[db-name]?sslmode=disable`.
+- **Khuyến nghị Production:** Kích hoạt mã hóa SSL (`sslmode=require`), bổ sung PgBouncer để quản lý pool kết nối, thiết lập cơ chế sao lưu định kỳ (WAL archiving/pg_dump), và cấu hình Replication (Master-Slave) để dự phòng thảm họa.
 
-**So sánh 4 databases:**
+### 5.2. Redis Cache
 
-| Instance | DB Name | User | Password | Host Port (docker) | Service |
-|----------|---------|------|----------|-------------------|---------|
-| url_db | urldb | urluser | urlpass | 5432 | url-service |
-| analytics_db | analyticsdb | analyticsuser | analyticspass | 5433 | analytics-service |
-| user_db | userdb | useruser | userpass | 5434 | user-service |
-| notification_db | notificationdb | notificationuser | notificationpass | 5435 | notification-service |
+- **Đặc điểm:** Dùng làm cache phân tán cho URL lookups và lưu bộ đếm rate limit.
+- **Chế độ chạy:** Chạy lưu hoàn toàn trên RAM (ephemeral mode: `--save "" --appendonly no`) để tối ưu hiệu năng.
+- **Khuyến nghị Production:** Cấu hình xác thực mật khẩu, giới hạn dung lượng RAM tối đa (`maxmemory`), và triển khai mô hình Redis Sentinel hoặc Redis Cluster để đảm bảo tính sẵn sàng cao.
 
-**Phân tích:**
-- **Image:** postgres:16-alpine — PostgreSQL 16 trên Alpine Linux, ~90 MB
-- **Version 16:** Phiên bản mới nhất, hỗ trợ logical replication, performance improvements
-- **Alpine:** Smaller image, nhưng có thể gây vấn đề với một số extensions
-- **Health check:** Dùng `pg_isready` — công cụ chuẩn của PostgreSQL
-- **Storage:** Named volume trong Docker (persistent), emptyDir trong Kubernetes (ephemeral — not production ready)
+### 5.3. RabbitMQ Message Broker
 
-**Kết nối strings:**
-```
-postgres://urluser:urlpass@url_db:5432/urldb?sslmode=disable
-```
-- `sslmode=disable` — Không dùng SSL, chỉ cho development
-- `@url_db:5432` — Docker DNS resolution
+- **Đặc điểm:** Làm trung gian truyền thông điệp bất đồng bộ giữa các service (`url-service` đẩy sự kiện, `analytics-service` và `notification-service` tiêu thụ).
+- **Các Queue chính:** `url.created`, `url.accessed`, `url.deleted`, `user.registered`, `notification.send`.
+- **Khuyến nghị Production:** Thay đổi tài khoản mặc định `guest`, cấu hình kết nối bảo mật AMQPS (SSL/TLS), và sử dụng Quorum Queues để bảo toàn thông điệp khi xảy ra lỗi node.
 
-**Khuyến nghị cho production:**
-1. **SSL/TLS encryption:** Bỏ `sslmode=disable`, dùng `sslmode=require` hoặc `verify-full`
-2. **Connection pooling:** Thêm PgBouncer hoặc dùng built-in pool trong Go
-3. **Backup:** Thiết lập WAL archiving và pg_dump schedule
-4. **Replication:** Cấu hình streaming replication cho HA
-5. **Monitoring:** Triển khai pg_exporter cho Prometheus
-6. **Credentials:** Dùng Kubernetes Secrets hoặc Vault
+### 5.4. Nginx Reverse Proxy
 
-### 6.2. Redis Cache
+Nginx đóng vai trò là cổng định tuyến ở mức ứng dụng ngoài cùng trong file compose:
 
-**Configuration:**
-- **Image:** redis:7-alpine
-- **Mode:** Ephemeral (`--save "" --appendonly no`)
-- **Port:** 6379
-- **Purpose:** Cache cho URL shortening lookups
-- **Health check:** `redis-cli ping`
+| Đường Dẫn (Path) | Dịch Vụ Đích (Upstream) | Vai Trò |
+|------------------|-------------------------|---------|
+| `/api/` | `gateway:8080` | Chuyển tiếp các cuộc gọi API |
+| `/r/` | `gateway:8080` | Định tuyến các request redirect URL ngắn |
+| `/health` | `gateway:8080` | API check health của Gateway |
+| `/` | `frontend:5173` | Phục vụ mã nguồn Frontend |
 
-**Tại sao ephemeral?**
-- Redis chỉ dùng làm cache layer, không lưu dữ liệu quan trọng
-- URL mappings được persist trong PostgreSQL
-- Nếu Redis mất dữ liệu, chỉ cần warm-up lại cache từ database
-- Performance tốt hơn (không cần fsync)
+- **Khuyến nghị:** Cấu hình mã hóa SSL/TLS, thêm các header bảo mật (`HSTS`, `X-Frame-Options`), kích hoạt nén `gzip`, và cài đặt cấu hình giới hạn tần suất request (rate limiting) ngay tại lớp Nginx.
 
-**Redis connection string:**
-```
-redis://redis:6379/0
-```
-DB index 0 được sử dụng.
+### 5.5. Adminer
 
-**Use cases trong project:**
-1. Cache URL lookups: Giảm tải cho PostgreSQL
-2. Rate limiting counters (gateway): `REDIRECT_RATE_LIMIT = 100000`
-3. Session cache (future)
-
-**Khuyến nghị cho production:**
-1. **Redis Sentinel** hoặc **Redis Cluster** cho HA
-2. **Password authentication:** Dùng `requirepass`
-3. **Memory limit:** Set `maxmemory` và `maxmemory-policy`
-4. **Persistence:** Có thể enable AOF cho cache không critical
-5. **Exporter:** Triển khai redis_exporter cho Prometheus
-
-### 6.3. RabbitMQ Message Broker
-
-**Configuration:**
-- **Image:** rabbitmq:3.13-management-alpine
-- **Ports:** 5672 (AMQP), 15672 (Management UI)
-- **Credentials:** guest/guest
-- **Health check:** `rabbitmq-diagnostics ping`
-
-**Message flow:**
-```
-url-service ──(publish)──→ RabbitMQ ──(consume)──→ analytics-service
- url-service ──(publish)──→ RabbitMQ ──(consume)──→ notification-service
-```
-
-**Các queues (từ shared/events package):**
-```
-url.created
-url.accessed
-url.deleted
-user.registered
-notification.send
-```
-
-**Phân tích kỹ thuật:**
-- Phiên bản 3.13: Hỗ trợ quorum queues, stream queues
-- Management plugin: UI quản lý tại port 15672
-- Alpine base: Image nhẹ hơn so với RabbitMQ thường (~100 MB vs ~200 MB)
-- guest/guest credentials: Chỉ dùng cho development
-
-**Khuyến nghị cho production:**
-1. **Xác thực mạnh:** Dùng credential khác guest/guest, tích hợp với LDAP/OAuth
-2. **SSL/TLS:** AMQPS cho encrypted connection
-3. **High Availability:** Quorum queues + mirrored queues
-4. **Clustering:** Triển khai RabbitMQ cluster (3 nodes)
-5. **Monitoring:** rabbitmq_exporter + Prometheus plugin
-6. **Resource limits:** Set vm_memory_high_watermark
-
-### 6.4. Nginx Reverse Proxy
-
-**Configuration:**
-```nginx
-events {
-    worker_connections 1024;
-}
-
-http {
-    upstream frontend_upstream {
-        server frontend:5173;
-    }
-
-    upstream gateway_upstream {
-        server gateway:8080;
-    }
-
-    server {
-        listen 80;
-
-        location /api/ { proxy_pass http://gateway_upstream; }
-        location /r/   { proxy_pass http://gateway_upstream; }
-        location /health { proxy_pass http://gateway_upstream; }
-        location /     { proxy_pass http://frontend_upstream; }
-    }
-}
-```
-
-**Routing Rules:**
-
-| Path | Upstream | Timeout | Description |
-|------|----------|---------|-------------|
-| `/api/` | gateway:8080 | 30s | REST API endpoints |
-| `/r/` | gateway:8080 | none | URL redirects |
-| `/health` | gateway:8080 | none | Health check |
-| `/` | frontend:5173 | none | Static assets / SPA |
-
-**Headers forwarded:**
-```
-Host: $host
-X-Real-IP: $remote_addr
-X-Forwarded-For: $proxy_add_x_forwarded_for
-X-Forwarded-Proto: $scheme
-```
-
-WebSocket support for frontend:
-```nginx
-proxy_set_header Upgrade $http_upgrade;
-proxy_set_header Connection "upgrade";
-```
-
-**Phân tích:**
-- `proxy_http_version 1.1` — Cần cho keepalive và WebSocket
-- `client_max_body_size 10m` — Giới hạn body size
-- `worker_connections 1024` — 1024 connections per worker
-- Timeouts: connect 30s, send 30s, read 30s
-- Không có SSL/TLS termination (listen 80, không 443)
-
-**Khuyến nghị:**
-1. **SSL/TLS:** Thêm certificate với Let's Encrypt (certbot)
-2. **Compression:** Thêm `gzip on;`
-3. **Security headers:** Thêm `X-Frame-Options`, `X-Content-Type-Options`, `HSTS`
-4. **Rate limiting:** Nginx built-in limit_req
-5. **Health check upstream:** Dùng `nginx_upstream_check_module` hoặc `health_check`
-
-### 6.5. Adminer
-
-**Configuration:**
-- **Image:** adminer:latest
-- **Port:** 8090 (host) → 8080 (container)
-- **Network:** url-shortener
-- **Purpose:** GUI database management
-
-**Phân tích:**
-- Adminer cho phép truy cập tất cả 4 PostgreSQL databases
-- Chỉ nên dùng trong development
-- Không có authentication mặc định — cần bảo vệ
-
-**Security concern:**
-- Không có SSL
-- Không có authentication
-- Truy cập từ host port 8090
-
-**Khuyến nghị:**
-- Remove trong production deployment
-- Hoặc thêm authentication (dùng Nginx basic auth trước proxy)
-- Hoặc expose qua VPN/internal network
+GUI quản trị dữ liệu hoạt động trên cổng `8090`.
+- **Khuyến nghị:** Gỡ bỏ hoàn toàn container này khỏi sơ đồ triển khai Production để tránh rò rỉ dữ liệu.
 
 ---
 
-## 7. CI/CD Pipeline — GitHub Actions
+## 6. CI/CD Pipeline — GitHub Actions
 
-### 7.1. Continuous Integration (CI) — `ci.yml`
+### 6.1. Continuous Integration (CI)
 
-```yaml
-name: Continuous Integration
+Quy trình CI tự động chạy khi có Push hoặc Pull Request vào nhánh `main`:
+1. **`go-lint-and-test`:** Kiểm tra định dạng code (`gofmt`), chạy phân tích tĩnh (`go vet`), và thực hiện unit test có bật tính năng phát hiện race condition (`go test -race`).
+2. **`frontend-build`:** Cài đặt dependencies bằng lệnh tối ưu `npm ci` và build kiểm thử frontend.
+3. **`docker-compose-check`:** Chạy lệnh build thử toàn bộ các Dockerfile để đảm bảo không bị lỗi cú pháp cấu hình.
 
-on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
-```
+### 6.2. Continuous Delivery (CD)
 
-**Trigger:** Push/PR vào main branch, hoặc manual trigger.
+Kích hoạt khi push code lên `main` hoặc tạo tag dạng `v*`. Tiến hành build các image docker và đẩy (push) lên GitHub Container Registry (GHCR).
 
-**3 Jobs song song:**
+### 6.3. Build Matrix
 
-**Job 1: `go-lint-and-test`**
+Để tối ưu thời gian chạy, CD sử dụng một ma trận build (build matrix) chạy song song 6 jobs tương ứng với 6 thành phần:
 
-| Step | Action/Tool | Mục Đích |
-|------|------------|----------|
-| Checkout | actions/checkout@v4 | Lấy source code |
-| Set up Go | actions/setup-go@v5 | Go 1.23.x, cache enabled |
-| Format check | gofmt -l . | Kiểm tra Go formatting |
-| Vet + Test | go vet + go test -v -race -cover | Phân tích tĩnh + unit test |
+| Thành Phần | Thư Mục Gốc (Context) | Đường Dẫn Dockerfile |
+|------------|-----------------------|----------------------|
+| `url-service` | `.` | `services/url-service/Dockerfile` |
+| `analytics-service` | `.` | `services/analytics-service/Dockerfile` |
+| `user-service` | `.` | `services/user-service/Dockerfile` |
+| `notification-service` | `.` | `services/notification-service/Dockerfile` |
+| `gateway` | `.` | `gateway/Dockerfile` |
+| `frontend` | `.` | `frontend/Dockerfile` |
 
-**Phân tích Go test step:**
-```yaml
-for dir in $(go work edit -json | jq -r '.Use[].DiskPath'); do
-    go vet "./$dir/..."
-    go test -v -race -cover "./$dir/..."
-done
-```
-- Dùng `go work edit -json` để lấy danh sách module từ go.work
-- Chạy vet và test trên từng module
-- `-race`: Race detection (quan trọng cho concurrent Go code)
-- `-cover`: Code coverage
-- `-v`: Verbose output
-- **Thiếu:** `-count=1` để disable test caching
+### 6.4. Docker Layer Caching
 
-**Job 2: `frontend-build`**
+CD cấu hình cache thông qua GitHub Actions cache backend (`type=gha`, `mode=max`). Cơ chế này giúp giảm thời gian build các image từ 3-5 phút xuống còn dưới 60 giây ở các lần chạy sau.
 
-| Step | Action/Tool | Mục Đích |
-|------|------------|----------|
-| Checkout | actions/checkout@v4 | Lấy source code |
-| Set up Node | actions/setup-node@v4 | Node.js 22, npm cache |
-| Install | npm ci | Clean install dependencies |
-| Build | npm run build | Vite production build |
+### 6.5. Multi-Arch Build
 
-**Phân tích frontend build:**
-- Node 22: LTS version
-- `npm ci` thay vì `npm install`: Nhanh hơn, deterministic (dùng package-lock.json)
-- Cache trên `frontend/package-lock.json`
-- **Thiếu:** TypeScript type checking (`tsc --noEmit`), lint (`npm run lint`)
+- **Hiện tại:** Chỉ build cho kiến trúc `linux/amd64`.
+- **Khuyến nghị:** Tích hợp `docker/setup-qemu-action` để hỗ trợ build thêm kiến trúc `linux/arm64` phục vụ các máy chủ tối ưu chi phí như AWS Graviton hoặc Azure ARM VMs.
 
-**Job 3: `docker-compose-check`**
+### 6.6. Deploy to AKS
 
-| Step | Action/Tool | Mục Đích |
-|------|------------|----------|
-| Checkout | actions/checkout@v4 | Lấy source code |
-| Build Docker | docker compose build | Build tất cả images |
-
-**Phân tích Docker build test:**
-- Build tất cả services để verify Dockerfiles không bị lỗi
-- **Không chạy** `docker compose up` (chỉ build, không start)
-- Sử dụng Docker Compose V2 (built-in)
-- **Thiếu:** Docker layer caching (có thể dùng `docker/build-push-action`)
-
-### 7.2. Continuous Delivery (CD) — `cd.yml`
-
-```yaml
-name: Continuous Delivery
-
-on:
-  push:
-    branches: [ main ]
-    tags: [ 'v*' ]
-  workflow_dispatch:
-
-permissions:
-  contents: read
-  packages: write
-```
-
-**Trigger:** Push main branch, tag v*, manual trigger.
-**Permissions:** Read code, write packages (GHCR).
-
-### 7.3. Build Matrix
-
-```yaml
-strategy:
-  fail-fast: false
-  matrix:
-    include:
-      - service: url-service
-        context: .
-        dockerfile: services/url-service/Dockerfile
-      - service: analytics-service
-        context: .
-        dockerfile: services/analytics-service/Dockerfile
-      - service: user-service
-        context: .
-        dockerfile: services/user-service/Dockerfile
-      - service: notification-service
-        context: .
-        dockerfile: services/notification-service/Dockerfile
-      - service: gateway
-        context: .
-        dockerfile: gateway/Dockerfile
-      - service: frontend
-        context: .
-        dockerfile: frontend/Dockerfile
-```
-
-**Phân tích matrix:**
-- `fail-fast: false`: Các job không phụ thuộc nhau, một job fail không ảnh hưởng job khác
-- 6 services trong matrix → 6 parallel jobs
-- Tất cả dùng context `.` (root project)
-- Dockerfile path riêng cho mỗi service
-
-**Quy trình build:**
-1. **Checkout** — actions/checkout@v4
-2. **Setup Docker Buildx** — docker/setup-buildx-action@v3
-3. **Login GHCR** — docker/login-action@v3
-4. **Extract metadata** — docker/metadata-action@v5
-5. **Build & Push** — docker/build-push-action@v6
-
-### 7.4. Docker Layer Caching
-
-```yaml
-- name: Build and push Docker image
-  uses: docker/build-push-action@v6
-  with:
-    cache-from: type=gha
-    cache-to: type=gha,mode=max
-```
-
-**Caching strategy:**
-- `type=gha`: GitHub Actions cache backend
-- `mode=max`: Cache tất cả layers (không chỉ exported layers)
-- **Lợi ích:** Build time giảm từ 3-5 phút xuống 30-60 giây
-- **Giới hạn:** Cache tối đa 10GB cho mỗi repository
-
-### 7.5. Multi-Arch Build
-
-Hiện tại build chỉ chạy trên `ubuntu-latest` (linux/amd64).
-
-**Khuyến nghị thêm multi-arch:**
-```yaml
-- name: Set up QEMU
-  uses: docker/setup-qemu-action@v3
-
-- name: Build and push
-  uses: docker/build-push-action@v6
-  with:
-    platforms: linux/amd64,linux/arm64
-```
-
-Hỗ trợ ARM64 cần thiết cho:
-- Apple Silicon Macs
-- AWS Graviton instances
-- Raspberry Pi clusters
-- Azure ARM-based VMs
-
-### 7.6. Deploy to AKS
-
-```yaml
-deploy-to-aks:
-  name: Deploy to AKS
-  runs-on: ubuntu-latest
-  needs: [build-and-push]
-  if: github.ref == 'refs/heads/main'
-```
-
-**Phụ thuộc:** Chỉ chạy sau `build-and-push` success.
-**Điều kiện:** Chỉ deploy từ main branch (không từ tag).
-
-**Các bước deploy:**
-
-**Step 1: Azure Login**
-```yaml
-- uses: azure/login@v2
-  with:
-    creds: ${{ secrets.AZURE_CREDENTIALS }}
-```
-- Dùng Service Principal credentials (JSON) từ GitHub Secrets
-- Azure login@v2 — phiên bản mới nhất
-
-**Step 2: Set AKS Context**
-```yaml
-- uses: azure/aks-set-context@v4
-  with:
-    cluster-name: ${{ secrets.AZURE_AKS_NAME }}
-    resource-group: ${{ secrets.AZURE_AKS_RESOURCE_GROUP }}
-```
-- Lấy kubeconfig cho AKS cluster
-- Secrets: AZURE_AKS_NAME, AZURE_AKS_RESOURCE_GROUP
-
-**Step 3: Setup Kubectl**
-```yaml
-- uses: azure/setup-kubectl@v4
-```
-
-**Step 4: Set up GHCR Secret**
-```yaml
-kubectl apply -f k8s/namespace.yaml
-kubectl create secret docker-registry ghcr-secret \
-  --docker-server=ghcr.io \
-  --docker-username=${{ github.actor }} \
-  --docker-password=${{ secrets.GITHUB_TOKEN }} \
-  --namespace=url-shortener \
-  --dry-run=client -o yaml | kubectl apply -f -
-kubectl patch serviceaccount default -n url-shortener \
-  -p '{"imagePullSecrets": [{"name": "ghcr-secret"}]}'
-```
-
-- Tạo docker-registry secret để pull image từ GHCR
-- Dùng `--dry-run=client -o yaml | kubectl apply -f -` để idempotent
-- Patch service account default để tự động dùng secret
-
-**Step 5: Replace Image Tags**
-```yaml
-sed -i "s|url-shortener-microservices-url-service:latest|ghcr.io/${REPO_LC}/url-service:${SHORT_SHA}|g" k8s/apps.yaml
-sed -i "s|url-shortener-microservices-analytics-service:latest|ghcr.io/${REPO_LC}/analytics-service:${SHORT_SHA}|g" k8s/apps.yaml
-sed -i "s|url-shortener-microservices-user-service:latest|ghcr.io/${REPO_LC}/user-service:${SHORT_SHA}|g" k8s/apps.yaml
-sed -i "s|url-shortener-microservices-notification-service:latest|ghcr.io/${REPO_LC}/notification-service:${SHORT_SHA}|g" k8s/apps.yaml
-sed -i "s|url-shortener-microservices-gateway:latest|ghcr.io/${REPO_LC}/gateway:${SHORT_SHA}|g" k8s/apps.yaml
-```
-
-- `SHORT_SHA`: 7 ký tự đầu của commit SHA
-- `REPO_LC`: lowercase của repository name
-- Thay đổi image tags từ local `:latest` sang GHCR `:sha`
-- **Vấn đề:** Dùng sed modify file YAML — có thể gây lỗi nếu format phức tạp hơn
-
-**Step 6: Deploy Manifests**
-```yaml
-kubectl apply -f k8s/config.yaml
-kubectl apply -f k8s/infra.yaml
-kubectl apply -f k8s/apps.yaml
-```
-
-Thứ tự apply quan trọng:
-1. ConfigMap + Secrets trước
-2. Infrastructure (databases, redis, rabbitmq)
-3. Applications (services, gateway)
-
-**Step 7: Verify Rollout**
-```yaml
-kubectl rollout status deployment/url-service -n url-shortener --timeout=2m
-kubectl rollout status deployment/analytics-service -n url-shortener --timeout=2m
-kubectl rollout status deployment/user-service -n url-shortener --timeout=2m
-kubectl rollout status deployment/notification-service -n url-shortener --timeout=2m
-kubectl rollout status deployment/gateway -n url-shortener --timeout=2m
-```
-
-- Mỗi deployment có timeout 2 phút
-- Chỉ verify application deployments, không verify infrastructure deployments
-- rollout status trả về non-zero exit code nếu rollout fail
+Tiến trình deploy tự động lên Azure Kubernetes Service (AKS) gồm các bước:
+1. Đăng nhập Azure thông qua Service Principal credentials lưu trong GitHub Secrets.
+2. Thiết lập cấu hình kết nối context AKS và cài đặt `kubectl`.
+3. Tạo và cập nhật Secret truy cập Registry (`ghcr-secret`) vào namespace `url-shortener`.
+4. Thay thế tag ảnh tĩnh trong file `k8s/apps.yaml` thành tag dạng động chứa commit SHA (`${{ github.sha }}`) bằng lệnh `sed`.
+5. Apply các file manifest theo thứ tự: `config.yaml` -> `infra.yaml` -> `apps.yaml`.
+6. Kiểm tra và xác nhận trạng thái triển khai thành công (`kubectl rollout status`) với thời gian chờ tối đa 2 phút.
 
 ---
 
-## 8. Monitoring Stack
+## 7. Monitoring Stack
 
-### 8.1. Prometheus — Cấu Hình Scrape
+### 7.1. Prometheus — Cấu Hình Scrape
 
-**File:** `monitoring/prometheus.yml`
+Prometheus hoạt động ở chế độ thu thập dữ liệu chủ động (pull-based) với chu kỳ rất ngắn (`scrape_interval: 5s` và `evaluation_interval: 5s`). Các endpoint thu thập bao gồm `/metrics` của cả 5 service backend (gateway và 4 microservices).
+- **Khuyến nghị:** Điều chỉnh retention time (`storage.tsdb.retention.time`) từ `1h` (môi trường dev) lên `30d` ở production, đồng thời cấu hình thêm cảnh báo (Alertmanager).
 
-```yaml
-global:
-  scrape_interval: 5s
-  evaluation_interval: 5s
+### 7.2. Grafana — Dashboards
 
-scrape_configs:
-  - job_name: "gateway"
-    static_configs:
-      - targets: ["gateway:8080"]
-    metrics_path: /metrics
+Grafana được thiết lập sẵn hai dashboard thông qua cơ chế tự động nạp cấu hình (provisioning):
+1. **Services Overview:** Theo dõi tài nguyên hệ thống (số lượng Goroutines, bộ nhớ Heap tiêu thụ, tỷ lệ CPU, số file descriptor đang mở) và tích hợp log stream từ Loki.
+2. **Circuit Breaker Monitor:** Theo dõi trạng thái của Circuit Breaker ở Gateway (0: CLOSED, 1: HALF_OPEN, 2: OPEN), số lượng yêu cầu bị từ chối, tần suất lỗi, và biểu đồ trễ p50/p95/p99.
 
-  - job_name: "url-service"
-    static_configs:
-      - targets: ["url-service:8080"]
-    metrics_path: /metrics
+### 7.3. Loki — Log Aggregation
 
-  - job_name: "analytics-service"
-    static_configs:
-      - targets: ["analytics-service:8080"]
-    metrics_path: /metrics
+Loki thu thập và nén log dạng phân tán. Cấu hình sử dụng động cơ lưu trữ TSDB (`schema: v13`) ghi trực tiếp lên ổ đĩa của container, và tắt chế độ xác thực (`auth_enabled: false`) cho môi trường dev.
 
-  - job_name: "user-service"
-    static_configs:
-      - targets: ["user-service:8080"]
-    metrics_path: /metrics
+### 7.4. Promtail — Log Collector
 
-  - job_name: "notification-service"
-    static_configs:
-      - targets: ["notification-service:8080"]
-    metrics_path: /metrics
-```
+Promtail chạy dưới dạng một daemon thu thập log từ Docker socket (`/var/run/docker.sock`) và thư mục chứa log container của máy chủ (`/var/lib/docker/containers`). Nó tự động phân tích và gán nhãn log dựa trên compose metadata để đẩy về Loki.
 
-**Phân tích scrape config:**
+### 7.5. Datasource Provisioning
 
-| Job Name | Target | Metrics Path | Interval |
-|----------|--------|-------------|----------|
-| gateway | gateway:8080 | /metrics | 5s |
-| url-service | url-service:8080 | /metrics | 5s |
-| analytics-service | analytics-service:8080 | /metrics | 5s |
-| user-service | user-service:8080 | /metrics | 5s |
-| notification-service | notification-service:8080 | /metrics | 5s |
-
-**Key metrics endpoints:**
-- Mỗi Go service expose Prometheus metrics tại `/metrics`
-- Gateway metrics: `gateway_requests_total`, `gateway_request_duration_seconds`, `gateway_circuit_breaker_state`, `gateway_circuit_breaker_trips_total`, `gateway_circuit_breaker_rejected_total`
-- Go runtime metrics: `go_goroutines`, `go_memstats_alloc_bytes`, `go_gc_duration_seconds`
-- Process metrics: `process_cpu_seconds_total`, `process_open_fds`, `process_resident_memory_bytes`
-
-**Global config:**
-- `scrape_interval: 5s` — Rất aggressive! Mặc định Prometheus là 15s. 5s tạo nhiều traffic nhưng real-time hơn
-- `evaluation_interval: 5s` — Đánh giá alert rules mỗi 5s
-
-**Thiếu:**
-- Không có `metric_relabel_configs` — Có thể drop unnecessary metrics
-- Không có `relabel_configs` — Có thể thêm metadata labels
-- Không có alerting rules
-- Không có scrape cho infrastructure (Node exporter, PostgreSQL exporter, Redis exporter)
-
-**Prometheus Container configuration:**
-```yaml
-command:
-  - "--config.file=/etc/prometheus/prometheus.yml"
-  - "--storage.tsdb.path=/prometheus"
-  - "--web.console.libraries=/etc/prometheus/console_libraries"
-  - "--web.console.templates=/etc/prometheus/consoles"
-  - "--storage.tsdb.retention.time=1h"
-  - "--web.enable-lifecycle"
-```
-
-| Flag | Value | Mục Đích |
-|------|-------|----------|
-| storage.tsdb.retention.time | 1h | Retention rất ngắn, chỉ cho dev |
-| web.enable-lifecycle | true | Cho phép reload config qua API |
-
-**Khuyến nghị retention:**
-- Development: 1h (OK)
-- Staging: 24h
-- Production: 30d (cần tính toán disk space)
-
-### 8.2. Grafana — Dashboards
-
-Grafana được cấu hình với:
-- **Image:** grafana/grafana:11.1.0
-- **Port:** 3000
-- **Credentials:** admin/admin
-- **Auto-provisioning:** datasources + dashboards
-
-**Dashboard provisioning:**
-
-File `monitoring/grafana/provisioning/dashboards/dashboards.yml`:
-```yaml
-apiVersion: 1
-providers:
-  - name: "default"
-    orgId: 1
-    folder: ""
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 30
-    options:
-      path: /etc/grafana/provisioning/dashboards
-```
-
-**Dashboard 1: Services Overview (`services_overview.json`)**
-
-UID: `services-overview`
-
-**Panels:**
-
-| Panel ID | Title | Type | Datasource | Query |
-|----------|-------|------|------------|-------|
-| 1 | Current Goroutines | Stat | Prometheus | `go_goroutines` |
-| 2 | Current Allocated Heap Memory | Stat | Prometheus | `go_memstats_alloc_bytes` |
-| 3 | Goroutines Over Time | Time series | Prometheus | `go_goroutines` |
-| 4 | Allocated Heap Memory Over Time | Time series | Prometheus | `go_memstats_alloc_bytes` |
-| 5 | CPU Core Usage Over Time | Time series | Prometheus | `rate(process_cpu_seconds_total[30s])` |
-| 6 | Open File Descriptors | Time series | Prometheus | `process_open_fds` |
-| 7 | Live Log Stream | Logs | Loki | `{service=~"$service"}` |
-
-**Thresholds:**
-- Goroutines: green (<150), yellow (150-300), red (>300)
-- Heap Memory: green (<50MB), yellow (50-100MB), red (>100MB)
-
-**Dashboard 2: Circuit Breaker Monitor (`circuit_breaker.json`)**
-
-UID: `circuit-breaker-monitor`
-
-**Panels:**
-
-| Panel ID | Title | Type | Query |
-|----------|-------|------|-------|
-| 1 | Circuit Breaker State | Stat | `gateway_circuit_breaker_state` |
-| 2 | CB Trips | Stat | `increase(gateway_circuit_breaker_trips_total[$__range])` |
-| 3 | Rejected by CB | Stat | `increase(gateway_circuit_breaker_rejected_total[$__range])` |
-| 4 | CB State Over Time | Time series | `gateway_circuit_breaker_state` |
-| 5 | Requests/sec | Time series | `sum(rate(gateway_requests_total[10s])) by (service)` |
-| 6 | Requests/sec by Status Class | Time series (bar) | `sum(rate(gateway_requests_total[10s])) by (status_class)` |
-| 7 | Error Rate % | Time series | Error rate formula |
-| 8 | Response Latency (p50/p95/p99) | Time series | Histogram quantiles |
-
-**Circuit breaker state mapping:**
-- 0 = CLOSED (healthy, green)
-- 1 = HALF_OPEN (probing, yellow)
-- 2 = OPEN (tripped, red)
-
-**Response latency:**
-```promql
-histogram_quantile(0.50, sum(rate(gateway_request_duration_seconds_bucket[10s])) by (service, le))
-histogram_quantile(0.95, ...)
-histogram_quantile(0.99, ...)
-```
-
-**Error rate formula:**
-```promql
-100 * sum(rate(gateway_requests_total{status_class=~"5xx|circuit_open"}[10s])) by (service)
-  / (sum(rate(gateway_requests_total[10s])) by (service) > 0)
-```
-
-**Home dashboard:**
-```yaml
-GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /etc/grafana/provisioning/dashboards/circuit_breaker.json
-```
-
-Circuit Breaker dashboard là home dashboard mặc định — cho thấy tính năng circuit breaker là điểm nhấn của project.
-
-**Templating:**
-- `DS_PROMETHEUS` — Datasource selector cho Prometheus
-- `service` — Loki label values selector (multi-select, include all)
-
-### 8.3. Loki — Log Aggregation
-
-**Image:** grafana/loki:2.9.1
-**Port:** 3100 (HTTP), 9096 (gRPC)
-**Config:** `monitoring/loki-config.yml`
-
-```yaml
-auth_enabled: false
-
-server:
-  http_listen_port: 3100
-  grpc_listen_port: 9096
-
-common:
-  instance_addr: 127.0.0.1
-  path_prefix: /tmp/loki
-  storage:
-    filesystem:
-      chunks_directory: /tmp/loki/chunks
-      rules_directory: /tmp/loki/rules
-  replication_factor: 1
-  ring:
-    kvstore:
-      store: inmemory
-
-schema_config:
-  configs:
-    - from: 2020-10-24
-      store: tsdb
-      object_store: filesystem
-      schema: v13
-      index:
-        prefix: index_
-        period: 24h
-
-limits_config:
-  reject_old_samples: true
-  reject_old_samples_max_age: 168h
-  ingestion_rate_mb: 100
-  ingestion_burst_size_mb: 200
-  per_stream_rate_limit: 50MB
-  per_stream_rate_limit_burst: 100MB
-```
-
-**Phân tích Loki config:**
-- **Auth disabled:** Chỉ dùng trong development
-- **Filesystem storage:** Lưu chunks và rules vào /tmp/loki (ephemeral!)
-- **Replication factor: 1** — Single instance mode
-- **Schema v13:** Latest TSDB schema
-- **Index period: 24h** — Rotate index mỗi ngày
-- **Ingestion limits:** 100 MB/s rate, 200 MB/s burst — rất generous
-- **Reject old samples:** Từ chối log mẫu cũ hơn 168h (7 ngày)
-
-### 8.4. Promtail — Log Collector
-
-**Image:** grafana/promtail:latest
-**Port:** 9080 (HTTP), 0 (gRPC disabled)
-**Config:** `monitoring/promtail-config.yml`
-
-```yaml
-server:
-  http_listen_port: 9080
-  grpc_listen_port: 0
-
-positions:
-  filename: /tmp/positions.yaml
-
-clients:
-  - url: http://loki:3100/loki/api/v1/push
-
-scrape_configs:
-  - job_name: docker
-    docker_sd_configs:
-      - host: unix:///var/run/docker.sock
-        refresh_interval: 5s
-    relabel_configs:
-      - source_labels: [__meta_docker_container_label_com_docker_compose_service]
-        target_label: 'service'
-      - source_labels: [__meta_docker_container_name]
-        regex: '/(.*)'
-        target_label: 'container'
-```
-
-**Phân tích Promtail config:**
-- **Docker service discovery:** Tự động phát hiện containers qua Docker socket
-- **Refresh interval:** 5s — phát hiện containers mới nhanh
-- **Relabeling:**
-  - `service` label từ Docker Compose service name
-  - `container` label từ container name (strip leading `/`)
-- **Push URL:** http://loki:3100/loki/api/v1/push
-- **Positions file:** /tmp/positions.yaml (theo dõi vị trí đã đọc trong log files)
-
-**Volumes cần thiết:**
-```yaml
-volumes:
-  - /var/run/docker.sock:/var/run/docker.sock:ro
-  - /var/lib/docker/containers:/var/lib/docker/containers:ro
-```
-- Docker socket: Service discovery
-- Docker containers dir: Đọc log files
-
-### 8.5. Datasource Provisioning
-
-Grafana tự động cấu hình datasources khi start:
-
-**Prometheus datasource:**
-```yaml
-apiVersion: 1
-datasources:
-  - name: Prometheus
-    type: prometheus
-    access: proxy
-    url: http://prometheus:9090
-    isDefault: true
-    editable: false
-```
-
-**Loki datasource:**
-```yaml
-apiVersion: 1
-datasources:
-  - name: Loki
-    type: loki
-    uid: loki
-    access: proxy
-    url: http://loki:3100
-    isDefault: false
-    editable: false
-```
-
-**Phân tích:**
-- Prometheus là datasource mặc định
-- Loki có UID fixed là "loki" — tham chiếu từ dashboards
-- Cả hai đều `editable: false` — không cho user sửa qua UI
-- Cả hai dùng `access: proxy` — Grafana server proxy request
-- URLs dùng Docker DNS names (prometheus:9090, loki:3100)
+Các nguồn dữ liệu Prometheus (mặc định) và Loki được tự động đăng ký vào Grafana khi container khởi chạy và bị khóa quyền chỉnh sửa từ giao diện người dùng (`editable: false`) để tránh sai lệch cấu hình.
 
 ---
 
-## 9. Logging Stack
+## 8. Logging Stack
 
-### 9.1. Loki Configuration (chi tiết)
+### 8.1. Loki Configuration
 
-Loki 2.9.1 chạy single-instance mode với filesystem storage.
+Loki chạy ở cấu hình Single Instance (`replication_factor: 1`, lưu trữ in-memory ring index). Các dữ liệu log mẫu cũ hơn 7 ngày sẽ bị từ chối nhận (`reject_old_samples_max_age: 168h`). Dữ liệu log được lưu trữ tại thư mục `/tmp/loki` nên mang tính tạm thời và sẽ biến mất khi container bị khởi động lại.
 
-**Single instance mode:**
-- `replication_factor: 1`
-- `ring.kvstore.store: inmemory`
-- Phù hợp cho development, không cho production
+### 8.2. Promtail Configuration
 
-**Schema v13 (TSDB):**
-- Cải thiện query performance so với schema cũ (boltdb)
-- Index được lưu dưới dạng TSDB (Time Series Database)
-- Hỗ trợ better label indexing
+Promtail thực hiện quét Docker socket định kỳ mỗi `5s` để nhận diện container mới. Nó chuyển đổi nhãn container nội bộ của Docker Compose thành các tag nhãn tường minh như `service` (tên dịch vụ) và `container` (tên container cụ thể) giúp dễ dàng truy vấn log. Vị trí dòng log cuối cùng đã đọc được lưu lại trong file `/tmp/positions.yaml` để tránh gửi trùng lặp log.
 
-**Limits (cho development):**
-- `ingestion_rate_mb: 100` — Accept up to 100 MB/s
-- `per_stream_rate_limit: 50MB` — 50 MB/s per stream
-- Có thể cần giảm cho production để tránh abuse
+### 8.3. Grafana Log Explorer
 
-**Ephemeral storage:**
-- `/tmp/loki/chunks` — Hoàn toàn không persistent
-- Khi container restart, mất tất cả logs
-- Cần volume persistent cho production
-
-### 9.2. Promtail Configuration (chi tiết)
-
-**Docker service discovery:**
-```yaml
-docker_sd_configs:
-  - host: unix:///var/run/docker.sock
-    refresh_interval: 5s
-```
-
-Promtail quét Docker daemon mỗi 5s để phát hiện containers mới/dừng.
-
-**Relabeling:**
-```
-__meta_docker_container_label_com_docker_compose_service → service
-__meta_docker_container_name → container (strip leading /)
-```
-
-Ví dụ:
-- Container name: `/url-shortener_url-service_1` → container = "url-shortener_url-service_1"
-- Docker Compose label: `com.docker.compose.service = url-service` → service = "url-service"
-
-**Positions:**
-- File `/tmp/positions.yaml` ghi nhận vị trí đọc cuối cùng trong log file
-- Tránh gửi duplicate logs khi Promtail restart
-
-### 9.3. Grafana Log Explorer
-
-Dashboard "Services Overview" tích hợp Loki log panel:
-
-```json
-{
-  "datasource": { "type": "loki", "uid": "loki" },
-  "targets": [{
-    "expr": "{service=~\"$service\", service!=\"\"}",
-    "legendFormat": "{{service}}"
-  }],
-  "type": "logs"
-}
-```
-
-**Query:**
-- `{service=~"$service", service!=""}` — Lọc theo service name (từ template variable)
-- Hỗ trợ multi-select service
-- Loại bỏ empty service label
-
-**Log panel features:**
-- Live tailing: Real-time log streaming
-- Show labels: Hiển thị labels (service, container)
-- Wrap log message: Wrap long lines
-- Pretty JSON: Format JSON logs
-- Sort order: Descending (newest first)
-
-**Template variable:**
-```yaml
-- name: service
-  type: query
-  datasource: { type: "loki", uid: "loki" }
-  definition: label_values(service)
-  multi: true
-  includeAll: true
-```
-
-Cho phép lọc logs theo service, multi-select, include all.
+Log được hiển thị trực tiếp trong dashboard tổng quan của Grafana. Người dùng có thể lọc nhanh log bằng biến môi trường `$service` được lấy động từ Loki. Panel hỗ trợ các tính năng như xem log theo thời gian thực (live tailing), tự động xuống dòng, và hiển thị cấu trúc JSON log đẹp mắt.
 
 ---
 
-## 10. Container Dependency Graph
+## 9. Container Dependency Graph
 
-### 10.1. Dependency Tree
+### 9.1. Dependency Tree
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                          url-shortener                              │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌──── url_db ─────► (no deps) ─────┐                              │
-│  ├── analytics_db ──► (no deps) ─────┤                              │
-│  ├── user_db ───────► (no deps) ─────┤                              │
-│  ├── notification_db ► (no deps) ─────┤                              │
-│  ├── redis ─────────► (no deps) ─────┤         LEVEL 0: Databases   │
-│  └── rabbitmq ──────► (no deps) ─────┘                              │
-│                                                                      │
-│  ┌──── url-service ───► url_db, redis, rabbitmq ───┐               │
-│  ├── analytics-service ► analytics_db, rabbitmq ────┤               │
-│  ├── user-service ────► user_db ───────────────────┤  LEVEL 1:     │
-│  └── notification-svc ► notification_db, rabbitmq ──┘  Microservices│
-│                                                                      │
-│  ┌──── gateway ──────► url-service, analytics-service,              │
-│  │                      user-service, notification-service ──────── LEVEL 2: Gateway
-│                                                                      │
-│  ┌──── nginx ────────► gateway, frontend ──────────┐               │
-│  ├── frontend ───────► gateway ────────────────────┤  LEVEL 3:     │
-│  │                                                  │  Frontend     │
-│  ┌──── prometheus ───► gateway ────────────────────┐               │
-│  ├── grafana ────────► prometheus, loki ───────────┤  LEVEL 4:     │
-│  ├── loki ───────────► (no deps) ──────────────────┤  Monitoring   │
-│  └── promtail ───────► loki ───────────────────────┘               │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
+Quan hệ phụ thuộc giữa các thành phần được thể hiện qua sơ đồ kiến trúc dưới đây:
 
-### 10.2. Startup Order
+```mermaid
+graph TD
+    classDef db fill:#85C1E9,stroke:#2C3E50,stroke-width:2px;
+    classDef svc fill:#82E0AA,stroke:#2C3E50,stroke-width:2px;
+    classDef monitor fill:#D7BDE2,stroke:#2C3E50,stroke-width:2px;
 
-**Ordered startup sequence:**
+    %% Level 0: Databases
+    url_db[(url_db)]:::db
+    analytics_db[(analytics_db)]:::db
+    user_db[(user_db)]:::db
+    notification_db[(notification_db)]:::db
+    redis[(redis)]:::db
+    rabbitmq[(rabbitmq)]:::db
 
-```
-Phase 0: Infrastructure (parallel)
-  ├── url_db ─────────── healthcheck: pg_isready (10s)
-  ├── analytics_db ───── healthcheck: pg_isready (10s)
-  ├── user_db ────────── healthcheck: pg_isready (10s)
-  ├── notification_db ── healthcheck: pg_isready (10s)
-  ├── redis ──────────── healthcheck: redis-cli ping (5s)
-  └── rabbitmq ───────── healthcheck: rabbitmq-diagnostics ping (20s)
+    %% Level 1: Microservices
+    url-service[url-service]:::svc
+    analytics-service[analytics-service]:::svc
+    user-service[user-service]:::svc
+    notification-service[notification-service]:::svc
 
-Phase 1: Microservices (parallel, after Phase 0 passes)
-  ├── url-service ────── healthcheck: GET /health (15s)
-  ├── analytics-service ─ healthcheck: GET /health (15s)
-  ├── user-service ───── healthcheck: GET /health (15s)
-  └── notification-svc ─ healthcheck: GET /health (15s)
+    %% Level 2: Gateway
+    gateway[gateway]:::svc
 
-Phase 2: Gateway (after all Phase 1 pass)
-  └── gateway ────────── healthcheck: GET /health (20s)
+    %% Level 3: Frontend & Proxy
+    nginx[nginx]
+    frontend[frontend]
 
-Phase 3: Frontend & Proxy (after Phase 2 passes)
-  ├── nginx ──────────── (service_started, no healthcheck)
-  └── frontend ───────── (service_healthy)
+    %% Level 4: Monitoring
+    prometheus[prometheus]:::monitor
+    grafana[grafana]:::monitor
+    loki[loki]:::monitor
+    promtail[promtail]:::monitor
 
-Phase 4: Monitoring (independent, no strict dependency)
-  ├── prometheus ─────── (no healthcheck)
-  ├── loki ───────────── (no healthcheck)
-  ├── grafana ────────── (depends_on prometheus, no condition)
-  └── promtail ───────── (depends_on loki, no condition)
-```
+    %% Dependencies
+    url-service --> url_db
+    url-service --> redis
+    url-service --> rabbitmq
 
-**Thời gian khởi động ước tính:**
-- Phase 0: 20-30 giây (RabbitMQ lâu nhất)
-- Phase 1: 20-30 giây (chờ healthcheck pass)
-- Phase 2: 25-30 giây (gateway chờ tất cả services)
-- Phase 3: 5-10 giây (nginx + frontend)
-- **Tổng cộng:** 70-100 giây
+    analytics-service --> analytics_db
+    analytics-service --> rabbitmq
 
-### 10.3. Critical Path Analysis
+    user-service --> user_db
 
-**Critical path (startup bottleneck):**
-```
-rabbitmq (20s) → url-service (15s) → gateway (20s) → nginx
+    notification-service --> notification_db
+    notification-service --> rabbitmq
+
+    gateway --> url-service
+    gateway --> analytics-service
+    gateway --> user-service
+    gateway --> notification-service
+
+    nginx --> gateway
+    nginx --> frontend
+    frontend --> gateway
+
+    prometheus --> gateway
+    grafana --> prometheus
+    grafana --> loki
+    promtail --> loki
 ```
 
-**Bottleneck analysis:**
+### 9.2. Startup Order
 
-| Component | Startup Time | Bottleneck | Khuyến Nghị |
-|-----------|-------------|------------|-------------|
-| RabbitMQ | 20-30s | Quản lý queues, exchanges | Có thể giảm start_period |
-| PostgreSQL | 5-10s | Recovery, WAL replay | OK, nhanh nhất |
-| Redis | 1-2s | In-memory, khởi động gần như instant | OK |
-| Go services | 2-5s | Binary load, DB connection pool | Có thể tăng parallelism |
-| Gateway | 2-5s | Chờ kết nối đến services | OK |
-| Nginx | 0.5-1s | Khởi động nhanh | OK |
-| Prometheus | 3-5s | WAL replay | OK |
+Trình tự khởi động tuần tự qua các giai đoạn được biểu diễn như sau:
 
-**Single point of failure (SPOF):**
-- **RabbitMQ:** Chỉ 1 instance, nếu fail → mất message queue
-- **Redis:** Chỉ 1 instance, nếu fail → mất cache (có thể chịu được)
-- **PostgreSQL (x4):** Mỗi database chỉ 1 instance
-- **Gateway:** 2 replicas — có HA cơ bản
-- **Nginx:** Chỉ 1 container — SPOF!
+```mermaid
+flowchart TD
+    subgraph Phase0 ["Phase 0: Infrastructure (Parallel)"]
+        db[PostgreSQL Databases]
+        red[Redis Cache]
+        rab[RabbitMQ Broker]
+    end
+
+    subgraph Phase1 ["Phase 1: Microservices (Parallel)"]
+        svcs[Microservices: URL, Analytics, User, Notification]
+    end
+
+    subgraph Phase2 ["Phase 2: Gateway"]
+        gw[API Gateway]
+    end
+
+    subgraph Phase3 ["Phase 3: Frontend & Proxy"]
+        web[Frontend & Nginx Proxy]
+    end
+
+    subgraph Phase4 ["Phase 4: Monitoring (Independent)"]
+        mon[Prometheus, Grafana, Loki, Promtail]
+    end
+
+    Phase0 -->|Healthcheck Passes| Phase1
+    Phase1 -->|Healthcheck Passes| Phase2
+    Phase2 -->|Healthcheck Passes| Phase3
+    Phase1 -.-> Phase4
+    Phase2 -.-> Phase4
+```
+
+### 9.3. Critical Path Analysis
+
+**Tuyến Khởi Động Trọng Yếu (Critical Path):**
+```
+rabbitmq (Chờ 20s) -> url-service (Chờ 15s) -> gateway (Chờ 20s) -> nginx
+```
+Tổng thời gian để toàn bộ hệ thống ở trạng thái sẵn sàng tiếp nhận request rơi vào khoảng **70 đến 100 giây**.
+- **Điểm nghẽn chính:** RabbitMQ mất nhiều thời gian nhất để khởi tạo và chạy các script diagnostics.
+- **Điểm yếu hệ thống (SPOF):** RabbitMQ, Redis, Nginx, và các database PostgreSQL chỉ chạy duy nhất 1 instance. Nếu bất kỳ thành phần nào trong số này gặp sự cố, một phần hoặc toàn bộ hệ thống sẽ ngừng hoạt động.
 
 ---
 
-## 11. Production Deployment Recommendations
+## 10. Production Deployment Recommendations
 
-### 11.1. Ingress Controller
+### 10.1. Ingress Controller
 
-Hiện tại hệ thống dùng NodePort (gateway:30080) để expose ra ngoài. Cho production, cần Ingress controller:
+Thay thế Nginx container bằng một Kubernetes Ingress Controller (ví dụ: Nginx Ingress) để quản lý traffic. Điều này giúp tích hợp giải pháp tự động cấp phát SSL/TLS (Cert-Manager với Let's Encrypt), định tuyến đường dẫn mềm dẻo, và thực hiện cân bằng tải tốt hơn ở lớp ngoài cùng của cluster.
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: url-shortener-ingress
-  namespace: url-shortener
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-spec:
-  rules:
-    - host: shortener.example.com
-      http:
-        paths:
-          - path: /api(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: gateway
-                port:
-                  number: 8080
-          - path: /r(/|$)(.*)
-            pathType: ImplementationSpecific
-            backend:
-              service:
-                name: gateway
-                port:
-                  number: 8080
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 5173
-  tls:
-    - hosts:
-        - shortener.example.com
-      secretName: shortener-tls
-```
+### 10.2. Horizontal Pod Autoscaler (HPA)
 
-**Lợi ích:**
-- SSL/TLS termination (Let's Encrypt via cert-manager)
-- Traffic routing rules
-- Load balancing
-- Rate limiting at ingress level
-- Path-based routing
-- Thay thế Nginx container (không cần chạy Nginx trong cluster)
+Cần cấu hình tự động co giãn số lượng Pod dựa trên mức độ sử dụng tài nguyên thực tế:
 
-### 11.2. Horizontal Pod Autoscaler (HPA)
+| Dịch Vụ | Số Lượng Pod Min | Số Lượng Pod Max | Ngưỡng Kích Hoạt CPU | Ngưỡng Kích Hoạt Memory | Chỉ Số Đo Lường Khác |
+|---------|------------------|------------------|----------------------|-------------------------|---------------------|
+| `url-service` | 3 | 20 | 70% | 80% | > 1000 http_req/sec |
+| `analytics-service` | 1 | 5 | 70% | 80% | N/A |
+| `user-service` | 1 | 5 | 70% | 80% | N/A |
+| `notification-service` | 1 | 5 | 70% | 80% | N/A |
+| `gateway` | 2 | 10 | 70% | 80% | > 5000 http_req/sec |
 
-Hiện tại, replicas được hardcode. Cho production, cần HPA:
+### 10.3. StatefulSet cho Databases
 
-```yaml
-apiVersion: autoscaling/v2
-kind: HorizontalPodAutoscaler
-metadata:
-  name: url-service-hpa
-  namespace: url-shortener
-spec:
-  scaleTargetRef:
-    apiVersion: apps/v1
-    kind: Deployment
-    name: url-service
-  minReplicas: 3
-  maxReplicas: 20
-  metrics:
-    - type: Resource
-      resource:
-        name: cpu
-        target:
-          type: Utilization
-          averageUtilization: 70
-    - type: Resource
-      resource:
-        name: memory
-        target:
-          type: Utilization
-          averageUtilization: 80
-    - type: Pods
-      pods:
-        metric:
-          name: http_requests_per_second
-        target:
-          type: AverageValue
-          averageValue: 1000
-```
+Chuyển đổi toàn bộ các database PostgreSQL từ `Deployment` sang `StatefulSet` đi kèm với cấu hình `PersistentVolumeClaim` (PVC) để lưu trữ dữ liệu bền vững trên các Premium SSD (như `managed-premium` trên Azure). Thiết lập thời gian chờ tắt Pod (`terminationGracePeriodSeconds`) là `30s` để tránh ngắt đột ngột các transaction đang ghi dở như phân tích ở mục 3.6.
 
-**HPA recommendations per service:**
+### 10.4. Resource Requests và Limits
 
-| Service | Min | Max | CPU Target | Memory Target | Metric |
-|---------|-----|-----|------------|--------------|--------|
-| url-service | 3 | 20 | 70% | 80% | req/s > 1000 |
-| analytics-service | 1 | 5 | 70% | 80% | N/A |
-| user-service | 1 | 5 | 70% | 80% | N/A |
-| notification-service | 1 | 5 | 70% | 80% | N/A |
-| gateway | 2 | 10 | 70% | 80% | req/s > 5000 |
+Bắt buộc phải thiết lập hạn mức tài nguyên (Resource Quota) cho từng Pod để tránh tình trạng tranh chấp tài nguyên (Noisy Neighbor) trong cluster:
 
-### 11.3. StatefulSet cho Databases
+| Pod | CPU Request | Memory Request | CPU Limit | Memory Limit |
+|-----|-------------|----------------|-----------|--------------|
+| `url-service` | 200m | 256Mi | 1.0 | 1Gi |
+| `analytics-service` | 100m | 128Mi | 500m | 512Mi |
+| `user-service` | 100m | 128Mi | 500m | 512Mi |
+| `notification-service` | 100m | 128Mi | 500m | 512Mi |
+| `gateway` | 200m | 256Mi | 1.0 | 1Gi |
+| `redis` | 100m | 128Mi | 500m | 512Mi |
+| `rabbitmq` | 200m | 512Mi | 1.0 | 2Gi |
+| `postgres` (x4) | 250m | 512Mi | 2.0 | 4Gi |
+| `prometheus` | 500m | 1Gi | 2.0 | 4Gi |
+| `loki` | 500m | 1Gi | 2.0 | 4Gi |
 
-Như đã phân tích ở phần 4.6, databases cần StatefulSet + PVC:
+### 10.5. PersistentVolumeClaims
 
-```yaml
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: url-db
-  namespace: url-shortener
-spec:
-  serviceName: url-db-headless
-  replicas: 1
-  selector:
-    matchLabels:
-      app: url-db
-  template:
-    metadata:
-      labels:
-        app: url-db
-    spec:
-      terminationGracePeriodSeconds: 30
-      containers:
-        - name: postgres
-          image: postgres:16-alpine
-          envFrom:
-            - secretRef:
-                name: db-secrets
-          ports:
-            - containerPort: 5432
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-          resources:
-            requests:
-              memory: "256Mi"
-              cpu: "250m"
-            limits:
-              memory: "2Gi"
-              cpu: "1"
-          livenessProbe:
-            exec:
-              command: ["pg_isready", "-U", "urluser"]
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            exec:
-              command: ["pg_isready", "-U", "urluser", "-d", "urldb"]
-            initialDelaySeconds: 5
-            periodSeconds: 5
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes: ["ReadWriteOnce"]
-        storageClassName: managed-premium
-        resources:
-          requests:
-            storage: 50Gi
-```
+Cần cấp phát dung lượng ổ đĩa vật lý bền vững cho các thành phần lưu trữ:
+- **Prometheus:** Cấp phát 50 GB.
+- **Grafana:** Cấp phát 10 GB.
+- **Loki:** Cấp phát 100 GB.
+- **Dự toán lưu trữ trong 30 ngày:** Ước tính hệ thống tiêu tốn khoảng **205 GB** dung lượng đĩa Premium SSD cho toàn bộ database, log và metrics.
 
-**Storage class options (Azure AKS):**
-- `managed-premium`: SSD-based, IOPS cao
-- `managed-standard`: HDD-based, rẻ hơn
-- Backup via Velero hoặc Azure Backup
+### 10.6. Network Policies
 
-### 11.4. Resource Requests và Limits
+Thiết lập NetworkPolicies để phân đoạn mạng nội bộ cluster, ngăn chặn các truy cập trái phép chéo giữa các tầng:
 
-Hiện tại, không có resource requests/limits trong Kubernetes manifests. Đây là vấn đề cho production:
+| Lớp (Tier) | Nhãn Nhận Diện (Labels) | Cho Phép Nhận Traffic Từ (Ingress) | Quyền Gửi Traffic Đi (Egress) |
+|------------|-------------------------|------------------------------------|-------------------------------|
+| Database | `tier: database` | Chỉ từ `tier: backend` (Cổng 5432) | Không cho phép ra ngoài |
+| Backend | `tier: backend` | Chỉ từ `app: gateway` (Cổng 8080) | Gửi đến Database, Redis, RabbitMQ |
+| Gateway | `app: gateway` | Chỉ từ Ingress Controller | Gửi đến `tier: backend` |
+| Frontend | `tier: frontend` | Chỉ từ Ingress Controller | Không có |
 
-```yaml
-resources:
-  requests:
-    memory: "128Mi"
-    cpu: "100m"
-  limits:
-    memory: "512Mi"
-    cpu: "500m"
-```
+### 10.7. Pod Disruption Budgets
 
-**Resource recommendations:**
+Thiết lập chính sách PDB để đảm bảo số lượng Pod tối thiểu luôn hoạt động khi cluster tiến hành nâng cấp hoặc bảo trì định kỳ:
+- `url-service-pdb`: `minAvailable: 2` (Luôn duy trì ít nhất 2 Pod hoạt động).
+- `gateway-pdb`: `minAvailable: 1`.
 
-| Pod | Request CPU | Request Memory | Limit CPU | Limit Memory | Notes |
-|-----|-------------|---------------|-----------|-------------|-------|
-| url-service | 200m | 256Mi | 1 | 1Gi | Heavy traffic |
-| analytics-service | 100m | 128Mi | 500m | 512Mi | Async processing |
-| user-service | 100m | 128Mi | 500m | 512Mi | Auth heavy |
-| notification-service | 100m | 128Mi | 500m | 512Mi | Email/SMS |
-| gateway | 200m | 256Mi | 1 | 1Gi | Critical path |
-| redis | 100m | 128Mi | 500m | 512Mi | Cache |
-| rabbitmq | 200m | 512Mi | 1 | 2Gi | Message broker |
-| postgres (x4) | 250m | 512Mi | 2 | 4Gi | Database |
-| prometheus | 500m | 1Gi | 2 | 4Gi | Metrics |
-| grafana | 200m | 256Mi | 1 | 1Gi | Dashboards |
-| loki | 500m | 1Gi | 2 | 4Gi | Log storage |
-| promtail | 100m | 128Mi | 500m | 256Mi | Log collector |
+### 10.8. Secret Management
 
-**Total cluster resource estimate:**
-- CPU requests: ~4.5 cores
-- Memory requests: ~8 GB
-- CPU limits: ~15 cores
-- Memory limits: ~25 GB
-- Minimum node pool: 3 nodes of Standard_D4s_v3 (4 vCPU, 16 GB RAM)
-
-### 11.5. PersistentVolumeClaims
-
-Ngoài StatefulSet, cần PVC cho các services cần persistent data:
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: prometheus-data
-  namespace: url-shortener
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 50Gi
-  storageClassName: managed-premium
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: grafana-data
-  namespace: url-shortener
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: loki-data
-  namespace: url-shortener
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Gi
-```
-
-**Storage estimates for production (30 days retention):**
-
-| Component | Storage/Day | 30 Days | Storage Class |
-|-----------|------------|---------|---------------|
-| url_db | 500 MB | 15 GB | managed-premium |
-| analytics_db | 1 GB | 30 GB | managed-premium |
-| user_db | 200 MB | 6 GB | managed-premium |
-| notification_db | 100 MB | 3 GB | managed-premium |
-| Prometheus | 1.5 GB | 45 GB | managed-premium |
-| Grafana | 10 MB | 300 MB | managed-standard |
-| Loki | 3 GB | 90 GB | managed-premium |
-| RabbitMQ | 500 MB | 15 GB | managed-premium |
-| **Total** | ~7 GB | ~205 GB | |
-
-### 11.6. Network Policies
-
-Cần thêm Network Policies để phân đoạn mạng:
-
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: database-network-policy
-  namespace: url-shortener
-spec:
-  podSelector:
-    matchLabels:
-      tier: database
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              tier: backend
-      ports:
-        - protocol: TCP
-          port: 5432
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: backend-network-policy
-  namespace: url-shortener
-spec:
-  podSelector:
-    matchLabels:
-      tier: backend
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchLabels:
-              app: gateway
-      ports:
-        - protocol: TCP
-          port: 8080
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: deny-all
-  namespace: url-shortener
-spec:
-  podSelector: {}
-  policyTypes:
-    - Ingress
-    - Egress
-```
-
-**Network segmentation plan:**
-
-| Tier | Labels | Ingress From | Egress To |
-|------|--------|-------------|-----------|
-| Database | tier: database | tier: backend (port 5432) | None |
-| Backend | tier: backend | app: gateway (port 8080) | Database, Redis, RabbitMQ |
-| Gateway | app: gateway | Ingress controller | tier: backend |
-| Frontend | tier: frontend | Ingress controller | None |
-| Cache | app: redis | tier: backend (port 6379) | None |
-| Queue | app: rabbitmq | tier: backend (port 5672) | None |
-| Monitoring | tier: monitoring | Grafana ingress | All (metrics scraping) |
-
-### 11.7. Pod Disruption Budgets
-
-Cho production, cần PDB để đảm bảo availability khi bảo trì:
-
-```yaml
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: url-service-pdb
-  namespace: url-shortener
-spec:
-  minAvailable: 2
-  selector:
-    matchLabels:
-      app: url-service
----
-apiVersion: policy/v1
-kind: PodDisruptionBudget
-metadata:
-  name: gateway-pdb
-  namespace: url-shortener
-spec:
-  minAvailable: 1
-  selector:
-    matchLabels:
-      app: gateway
-```
-
-**PDB recommendations:**
-
-| Deployment | Replicas | minAvailable | maxUnavailable |
-|-----------|---------|-------------|---------------|
-| url-service | 3 | 2 | 1 |
-| gateway | 2 | 1 | 1 |
-| analytics-service | 1 | N/A | N/A (single replica) |
-| user-service | 1 | N/A | N/A |
-| notification-service | 1 | N/A | N/A |
-
-### 11.8. Secret Management
-
-**Current state:** Secrets hardcoded trong ConfigMap và Secret YAML files.
-
-**Recommendation:** Dùng Azure Key Vault (AKS + AAD Pod Identity):
-
-```yaml
-apiVersion: aadpodidentity.k8s.io/v1
-kind: AzureIdentity
-metadata:
-  name: url-shortener-identity
-  namespace: url-shortener
-spec:
-  type: 0
-  resourceID: /subscriptions/.../Microsoft.ManagedIdentity/userAssignedIdentities/url-shortener-id
-  clientID: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
----
-apiVersion: secrets-store.csi.x-k8s.io/v1
-kind: SecretProviderClass
-metadata:
-  name: url-shortener-secrets
-  namespace: url-shortener
-spec:
-  provider: azure
-  parameters:
-    usePodIdentity: "true"
-    keyvaultName: "url-shortener-kv"
-    objects: |
-      array:
-        - |
-          objectName: jwt-secret
-          objectType: secret
-        - |
-          objectName: db-url
-          objectType: secret
-    tenantId: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-```
+Sử dụng giải pháp quản lý khóa tập trung (như Azure Key Vault kết hợp với Secret Provider Class CSI Driver) thay vì lưu trực tiếp khóa Base64 trong các file YAML. Pod sẽ lấy quyền truy cập thông qua cơ chế AAD Pod Identity hoặc Managed Identity một cách an toàn.
 
 ---
 
-## 12. Kết Luận
+## 11. Kết Luận
 
 ### Tổng Kết Kiến Trúc
 
-Dự án URL Shortener Microservices triển khai một hệ thống microservices hoàn chỉnh với:
+Hệ thống URL Shortener Microservices đã xây dựng được một nền tảng triển khai microservices bài bản: tách biệt database cho từng dịch vụ, hỗ trợ đầy đủ các cơ chế kiểm tra sức khỏe và ràng buộc thứ tự khởi động, tích hợp sẵn pipeline CI/CD tự động hóa, cùng hệ thống thu thập log/metrics toàn diện qua Grafana.
 
-1. **Docker Compose:** 18 services cho môi trường phát triển local, với đầy đủ healthchecks, dependencies, volumes, và networking
-2. **Dockerfiles:** Multi-stage build cho Go services, single-stage cho frontend
-3. **Kubernetes:** 10 Deployments + 11 Services trên AKS, với ConfigMap/Secrets management
-4. **CI/CD:** GitHub Actions với build matrix (6 services), Docker layer caching, deploy tự động lên AKS
-5. **Monitoring:** Prometheus scrape 5 services (5s interval), Grafana với 2 provisioned dashboards
-6. **Logging:** Loki + Promtail stack với Docker service discovery
+### Điểm Mạnh và Điểm Yếu
 
-### Điểm Mạnh
+Hệ thống có ưu điểm lớn ở tính cô lập dịch vụ (database-per-service), khả năng giám sát trạng thái chi tiết, và quy trình CI/CD hoàn thiện. Tuy nhiên, kiến trúc triển khai hiện tại vẫn còn nhiều lỗ hổng lớn cần khắc phục trước khi đưa vào vận hành thực tế:
 
-- **Database-per-service pattern:** Isolation tốt giữa các microservices
-- **Healthchecks đầy đủ:** Đảm bảo dependency chain startup chính xác
-- **CI/CD hoàn chỉnh:** Từ code push → build → test → deploy tự động
-- **Monitoring coverage:** Tất cả services đều expose metrics
-- **Circuit breaker monitoring:** Dashboard dedicated cho failure detection
-- **Grafana auto-provisioning:** Dashboards và datasources được cấu hình sẵn
-
-### Điểm Yếu Cần Cải Thiện
-
-| Issue | Severity | Hiện Tại | Khuyến Nghị |
-|-------|----------|---------|-------------|
-| Database persistence | CRITICAL | emptyDir trong K8s | StatefulSet + PVC |
-| Secrets in ConfigMap | HIGH | Passwords trong ConfigMap | Chuyển sang Secrets / Vault |
-| No resource limits | HIGH | Không có requests/limits | Thêm resource spec cho mọi Pod |
-| Single RabbitMQ | HIGH | 1 replica | Cluster mode |
-| No Ingress | HIGH | NodePort duy nhất | Ingress Controller + TLS |
-| No HPA | MEDIUM | Replicas hardcoded | HorizontalPodAutoscaler |
-| No network policies | MEDIUM | Mạng phẳng | NetworkPolicy cho isolation |
-| No livenessProbe | MEDIUM | Chỉ readinessProbe | Thêm liveness + startup probes |
-| Retention ngắn | MEDIUM | Prometheus 1h | Tăng lên 30d cho production |
-| No backup strategy | MEDIUM | Không có backup | Velero/WAL archiving |
-| No multi-arch build | LOW | AMD64 only | Thêm ARM64 support |
-| No PDB | LOW | Không có | PodDisruptionBudget |
-| No affinity rules | LOW | Pod scheduling tự do | Node/AZ anti-affinity |
+| Vấn Đề | Mức Độ | Giải Pháp |
+|--------|--------|-----------|
+| Mất dữ liệu database khi Pod restart | **CRITICAL** | Chuyển PostgreSQL sang `StatefulSet` + PVC như phân tích mục 3.6 |
+| Lộ mật khẩu trong ConfigMap | **HIGH** | Di chuyển toàn bộ thông tin nhạy cảm sang K8s Secrets hoặc Vault |
+| Không giới hạn tài nguyên Pod | **HIGH** | Bổ sung khai báo `requests` và `limits` cho mọi Pod |
+| Hạ tầng database/broker chỉ có 1 node | **HIGH** | Triển khai mô hình Cluster cho PostgreSQL, Redis, RabbitMQ |
+| Thiếu cơ chế tự phục hồi Pod khi treo | **MEDIUM** | Bổ sung `livenessProbe` và `startupProbe` |
 
 ### Security Checklist cho Production
 
-- [ ] Replace all default credentials (guest/guest, admin/admin)
-- [ ] Move all secrets to Azure Key Vault or HashiCorp Vault
-- [ ] Enable SSL/TLS (sslmode=require, AMQPS, HTTPS)
-- [ ] Change JWT_SECRET (min 256-bit random)
-- [ ] Add NetworkPolicies for micro-segmentation
-- [ ] Enable SSL termination at Ingress
-- [ ] Add OAuth2/OIDC authentication for Grafana
-- [ ] Scan Docker images for vulnerabilities (Trivy, Snyk)
-- [ ] Implement RBAC for Kubernetes resources
-- [ ] Enable audit logging (Kubernetes audit, database audit)
-- [ ] Regular security updates (Dependabot, Renovate)
+- [ ] Thay đổi toàn bộ thông tin xác thực mặc định (đổi pass `guest`, pass admin Grafana).
+- [ ] Mã hóa toàn bộ dữ liệu truyền nhận nội bộ cluster bằng SSL/TLS.
+- [ ] Chuyển các key và pass sang Azure Key Vault.
+- [ ] Áp dụng NetworkPolicies để cô lập cơ sở dữ liệu.
+- [ ] Quét lỗ hổng bảo mật của các Docker Image (`Trivy` hoặc `Snyk`) trong pipeline CI/CD.
 
-### Monitoring Expansion Recommendations
+### Dự Toán Chi Phí Hàng Tháng (Azure AKS)
 
-- [ ] Add node_exporter for host metrics
-- [ ] Add postgres_exporter (x4) for database metrics
-- [ ] Add redis_exporter for cache metrics
-- [ ] Add rabbitmq_exporter (or built-in Prometheus plugin)
-- [ ] Add blackbox_exporter for external endpoint monitoring
-- [ ] Add alertmanager with alerting rules
-- [ ] Create SLO dashboard (error budget, latency, throughput)
-- [ ] Add k6-operator for load testing in cluster
-- [ ] Implement distributed tracing (OpenTelemetry + Jaeger/Tempo)
-
-### Cost Estimates (Azure AKS)
-
-| Resource | SKU | Quantity | Monthly Cost (est.) |
-|----------|-----|----------|-------------------|
-| AKS cluster | Standard_D4s_v3 (4 vCPU, 16 GB) | 3 nodes | ~$600 |
-| Managed disks | Premium SSD 256 GB (P15) | 8 disks | ~$240 |
-| Azure Database for PostgreSQL | Flexible Server, 2 vCore | 4 instances | ~$400 |
-| Azure Cache for Redis | Standard C1 (1 GB) | 1 instance | ~$55 |
-| Load balancer | Standard | 1 | ~$20 |
-| Container Registry | Basic | 1 | ~$25 |
-| **Total** | | | **~$1,340/month** |
-
-*Note: Can reduce cost by running PostgreSQL on AKS with managed disks instead of Azure Database for PostgreSQL.*
-
-### File Inventory
-
-| File | Purpose | Lines |
-|------|---------|-------|
-| `docker-compose.yml` | Development environment | 356 |
-| `k8s/namespace.yaml` | Kubernetes namespace | 4 |
-| `k8s/config.yaml` | ConfigMap + Secret | 28 |
-| `k8s/infra.yaml` | Infrastructure (6 Deployments + 6 Services) | 290 |
-| `k8s/apps.yaml` | Applications (5 Deployments + 5 Services) | 340 |
-| `services/*/Dockerfile` | Multi-stage build (x5) | 50 |
-| `frontend/Dockerfile` | Single-stage build | 8 |
-| `monitoring/prometheus.yml` | Scrape config (5 jobs) | 29 |
-| `monitoring/loki-config.yml` | Loki config | 35 |
-| `monitoring/promtail-config.yml` | Promtail config | 21 |
-| `monitoring/grafana/provisioning/datasources/*` | Grafana datasources (x2) | 19 |
-| `monitoring/grafana/provisioning/dashboards/*` | Grafana dashboards (x2 + provider) | 788 |
-| `nginx/nginx.conf` | Reverse proxy config | 68 |
-| `.github/workflows/ci.yml` | CI pipeline | 77 |
-| `.github/workflows/cd.yml` | CD pipeline | 139 |
-
-**Tổng cộng:** ~2,250 lines of deployment/infrastructure code.
-
----
-
-*Báo cáo này được tạo bởi Agent AI vào ngày 2026-07-11. Dựa trên phân tích toàn bộ mã nguồn triển khai của dự án URL Shortener Microservices. Mọi khuyến nghị nên được xem xét và điều chỉnh phù hợp với yêu cầu cụ thể của môi trường production.*
+Ước tính chi phí vận hành hệ thống ở quy mô sản xuất tiêu chuẩn (3 nodes `Standard_D4s_v3`, 8 Premium SSDs, Azure Database for PostgreSQL Flexible, Azure Cache for Redis) rơi vào khoảng **$1,340 / tháng**. Chúng ta có thể tiết kiệm chi phí bằng cách tự vận hành PostgreSQL trên Kubernetes StatefulSet thay vì sử dụng dịch vụ Managed Database của Azure.
