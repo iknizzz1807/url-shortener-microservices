@@ -1,0 +1,51 @@
+direction: right
+
+client: "Client\nBrowser / API" {
+  shape: person
+  style.fill: "#f8fafc"
+  style.stroke: "#1e293b"
+}
+
+gateway: "API Gateway\n:8080" {
+  style.fill: "#dbeafe"
+  style.stroke: "#2563eb"
+}
+
+services: "Domain Services" {
+  user: "User Service\nAuth, bcrypt, JWT\n:8083" {style.fill: "#dcfce7"; style.stroke: "#10b981"}
+  url: "URL Service\nShorten, redirect, outbox\n:8081" {style.fill: "#dcfce7"; style.stroke: "#22c55e"}
+  analytics: "Analytics Service\nClick stats, timeline\n:8082" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+  notification: "Notification Service\nEvent notification\n:8084" {style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+}
+
+data: "Data Ownership" {
+  userdb: "user_db\nPostgreSQL" {shape: cylinder; style.fill: "#ecfdf5"; style.stroke: "#10b981"}
+  urldb: "url_db\nPostgreSQL + outbox" {shape: cylinder; style.fill: "#ecfdf5"; style.stroke: "#22c55e"}
+  analyticsdb: "analytics_db\nclicks + dedup" {shape: cylinder; style.fill: "#fffbeb"; style.stroke: "#f59e0b"}
+  notificationdb: "notification_db\nnotifications" {shape: cylinder; style.fill: "#fef2f2"; style.stroke: "#ef4444"}
+  redis: "Redis\ncache + rate limit" {shape: cylinder; style.fill: "#f0fdf4"; style.stroke: "#16a34a"}
+  rabbit: "RabbitMQ\ntopic exchange" {shape: queue; style.fill: "#fff7ed"; style.stroke: "#f97316"}
+}
+
+ops: "Operations" {
+  prometheus: "Prometheus\n/gateway metrics" {style.fill: "#eff6ff"; style.stroke: "#2563eb"}
+  grafana: "Grafana\nCircuit Breaker Monitor" {style.fill: "#fff7ed"; style.stroke: "#f97316"}
+}
+
+client -> gateway: "HTTP public/private"
+gateway -> services.user: "/api/auth, /api/me"
+gateway -> services.url: "/api/shorten, /r/{code}"
+gateway -> services.analytics: "/api/stats/{code}"
+gateway -> services.notification: "/api/notifications"
+gateway -> data.redis: "rate limit"
+services.user -> data.userdb
+services.url -> data.urldb
+services.url -> data.redis: "read-through cache"
+services.url -> data.rabbit: "url.created/clicked/deleted"
+data.rabbit -> services.analytics: "url.clicked"
+data.rabbit -> services.notification: "url.* + milestone"
+services.analytics -> data.analyticsdb
+services.analytics -> data.rabbit: "milestone.reached"
+services.notification -> data.notificationdb
+gateway -> ops.prometheus: "/metrics"
+ops.prometheus -> ops.grafana

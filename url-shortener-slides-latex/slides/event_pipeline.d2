@@ -1,0 +1,26 @@
+direction: right
+
+urlsvc: "URL Service\ntransaction boundary" {style.fill: "#dcfce7"; style.stroke: "#22c55e"}
+urldb: "url_db" {shape: cylinder; style.fill: "#ecfdf5"; style.stroke: "#22c55e"}
+outbox: "outbox table\nunpublished rows" {shape: cylinder; style.fill: "#fff7ed"; style.stroke: "#f97316"}
+workers: "Outbox workers\n3 goroutines\nbatch 50 / 2s" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+rabbit: "RabbitMQ\nexchange: url-shortener\ntype: topic" {shape: queue; style.fill: "#fff7ed"; style.stroke: "#f97316"}
+aq: "Queue\nanalytics.clicks\nkey: url.clicked" {shape: queue; style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+nq: "Queue\nnotifications.events\nkeys: url.created, url.deleted, milestone" {shape: queue; style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+analytics: "Analytics Service\nmanual ack + dedup" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+notification: "Notification Service\npending -> sent" {style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+analyticsdb: "analytics_db\nprocessed_events" {shape: cylinder; style.fill: "#fffbeb"; style.stroke: "#f59e0b"}
+notificationdb: "notification_db" {shape: cylinder; style.fill: "#fef2f2"; style.stroke: "#ef4444"}
+
+urlsvc -> urldb: "write URL row"
+urlsvc -> outbox: "write event same tx"
+outbox -> workers: "FOR UPDATE SKIP LOCKED"
+workers -> rabbit: "publish + mark published_at"
+rabbit -> aq: "url.clicked"
+rabbit -> nq: "url.created / url.deleted"
+aq -> analytics
+analytics -> analyticsdb: "insert click + event_id"
+analytics -> rabbit: "milestone.reached"
+rabbit -> nq: "milestone.reached"
+nq -> notification
+notification -> notificationdb

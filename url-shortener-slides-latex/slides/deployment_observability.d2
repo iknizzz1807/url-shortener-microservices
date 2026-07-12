@@ -1,0 +1,45 @@
+direction: down
+
+local: "Local Deployment Options" {
+  compose: "Docker Compose\nfull local stack" {style.fill: "#dbeafe"; style.stroke: "#2563eb"}
+  k8s: "Kubernetes Demo\nkind / minikube" {style.fill: "#dcfce7"; style.stroke: "#16a34a"}
+}
+
+infra: "Infrastructure containers" {
+  url_db: "url_db:5432" {shape: cylinder; style.fill: "#eff6ff"}
+  analytics_db: "analytics_db:5433" {shape: cylinder; style.fill: "#eff6ff"}
+  user_db: "user_db:5434" {shape: cylinder; style.fill: "#eff6ff"}
+  notification_db: "notification_db:5435" {shape: cylinder; style.fill: "#eff6ff"}
+  rabbit: "RabbitMQ\n5672 / 15672" {shape: queue; style.fill: "#fff7ed"}
+  redis: "Redis\n6379" {shape: cylinder; style.fill: "#f0fdf4"}
+}
+
+apps: "Application containers" {
+  gateway: "gateway\nCompose :8080\nK8s replicas=2" {style.fill: "#dbeafe"; style.stroke: "#2563eb"}
+  url: "url-service\nCompose :8081\nK8s replicas=3" {style.fill: "#dcfce7"; style.stroke: "#22c55e"}
+  analytics: "analytics-service:8082\n/health" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+  user: "user-service:8083\n/health" {style.fill: "#dcfce7"; style.stroke: "#10b981"}
+  notification: "notification-service:8084\n/health" {style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+}
+
+k8s_details: "Kubernetes objects" {
+  ns: "Namespace\nurl-shortener" {style.fill: "#f8fafc"}
+  cfg: "ConfigMap\nservice URLs + DSNs" {style.fill: "#eff6ff"}
+  secret: "Secret\nJWT_SECRET" {style.fill: "#fee2e2"}
+  svc: "Services\nClusterIP internal\nNodePort 30080 gateway" {style.fill: "#dcfce7"}
+  probes: "Readiness probes\n/health, pg_isready, ping" {style.fill: "#fef3c7"}
+}
+
+monitoring: "Monitoring" {
+  prometheus: "Prometheus:9090\nscrape 5s" {style.fill: "#eff6ff"; style.stroke: "#2563eb"}
+  grafana: "Grafana:3000\nCB dashboard" {style.fill: "#fff7ed"; style.stroke: "#f97316"}
+  k6: "k6 load test\n/r/{shortCode}" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+}
+
+local.compose -> infra: "start dependencies first"
+local.k8s -> k8s_details: "kubectl apply"
+k8s_details -> infra: "in-cluster infra"
+infra -> apps: "service discovery + readiness"
+apps.gateway -> monitoring.prometheus: "gateway metrics"
+monitoring.prometheus -> monitoring.grafana
+monitoring.k6 -> apps.gateway: "traffic + failure demo"

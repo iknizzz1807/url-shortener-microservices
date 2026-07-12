@@ -1,0 +1,24 @@
+direction: right
+
+user: "User clicks\nshort URL" {shape: person; style.fill: "#f8fafc"}
+gateway: "Gateway\n/r/{code}" {style.fill: "#dbeafe"; style.stroke: "#2563eb"}
+rate: "Rate limiter\n300 req/min/IP" {style.fill: "#fef3c7"; style.stroke: "#f59e0b"}
+cb: "Circuit Breaker\nurl-service" {style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+urlsvc: "URL Service" {style.fill: "#dcfce7"; style.stroke: "#22c55e"}
+redis: "Redis GET\n50ms timeout" {shape: cylinder; style.fill: "#f0fdf4"; style.stroke: "#16a34a"}
+db: "PostgreSQL\nurls table" {shape: cylinder; style.fill: "#eff6ff"; style.stroke: "#2563eb"}
+outbox: "Outbox\nurl.clicked" {shape: cylinder; style.fill: "#fff7ed"; style.stroke: "#f97316"}
+redirect: "301 Redirect\noriginal_url" {style.fill: "#dcfce7"; style.stroke: "#16a34a"}
+gone: "410 Gone\nexpired/inactive" {style.fill: "#fee2e2"; style.stroke: "#ef4444"}
+
+user -> gateway
+gateway -> rate: "IP key"
+rate -> cb: "allowed"
+cb -> urlsvc: "breaker closed"
+urlsvc -> redis: "try cache"
+redis -> redirect: "hit"
+redis -> db: "miss/error fallback"
+db -> redirect: "active + not expired"
+db -> gone: "inactive/expired"
+urlsvc -> outbox: "record click async"
+outbox -> redirect: "do not block user"
