@@ -1,13 +1,6 @@
 # Báo Cáo Thiết Kế Kiến Trúc: Event-Driven Architecture, Analytics & Notification Services
 
-> **Dự án:** URL Shortener Microservices  
-> **Tác giả:** AI Agent  
-> **Phiên bản:** 1.2 (Bổ sung đầy đủ bảng đặc tả)  
-> **Mục tiêu:** Phân tích kiến trúc hướng sự kiện (Event-Driven Architecture), các Event Schemas, cấu hình RabbitMQ, luồng xử lý sự kiện, cơ chế đảm bảo Delivery và thiết kế kiến trúc của Analytics Service cùng Notification Service.  
-> **Ngôn ngữ:** Tiếng Việt
-
 ---
-
 ## Mục Lục
 
 1. [Tổng Quan về Event-Driven Architecture (EDA)](#1-tong-quan-ve-event-driven-architecture-eda)
@@ -33,7 +26,7 @@ Hệ thống URL Shortener Microservices sử dụng **Event-Driven Architecture
 
 | Thành phần | Mô tả |
 |---|---|
-| **Event Producers** | Các service phát sinh sự kiện (URL Service — tạo/xóa URL, Gateway/Router — click URL) |
+| **Event Producers** | Các service phát sinh sự kiện (URL Service — tạo/xóa URL, URL Service (qua Outbox Coordinator) — click URL) |
 | **Message Broker** | RabbitMQ — exchange topic `url-shortener`, chịu trách nhiệm nhận, định tuyến, và lưu trữ message |
 | **Event Consumers** | Các service nhận và xử lý sự kiện (Analytics Service, Notification Service) |
 | **Event Schema** | Định nghĩa cấu trúc dữ liệu của từng loại sự kiện (shared/events/events.go) |
@@ -91,7 +84,7 @@ Tất cả các loại sự kiện đều chứa tập thuộc tính cơ bản �
 | `expires_at` | DateTime (Con trỏ) | Thời điểm hết hạn của URL (nếu có) |
 
 ### 2.5. URLClickedEvent
-* **Producer:** Gateway / Router  
+* **Producer:** URL Service (qua Outbox Coordinator)  
 * **Consumer:** Analytics Service  
 * **Cấu trúc trường mở rộng:**
 
@@ -134,7 +127,7 @@ Tất cả các loại sự kiện đều chứa tập thuộc tính cơ bản �
 | Event Type | Producer | Consumer | Queue | Routing Key |
 |---|---|---|---|---|
 | `url.created` | URL Service | Notification Service | `notifications.events` | `url.created` |
-| `url.clicked` | Gateway | Analytics Service | `analytics.clicks` | `url.clicked` |
+| `url.clicked` | URL Service (qua Outbox Coordinator) | Analytics Service | `analytics.clicks` | `url.clicked` |
 | `url.deleted` | URL Service | Notification Service | `notifications.events` | `url.deleted` |
 | `milestone.reached` | Analytics Service | Notification Service | `notifications.events` | `milestone.reached` |
 
@@ -189,7 +182,7 @@ Cấu hình **QoS Prefetch Count = 1** được thiết lập trên cả hai con
 * **Mục đích:** Đảm bảo xử lý tuần tự, cân bằng tải động (Fair Dispatch) giữa các consumers đang chạy song song, giảm nguy cơ quá tải bộ nhớ đệm của ứng dụng.
 
 ### 3.6. Message Persistence
-* **DeliveryMode = 2 (Persistent):** Toàn bộ tin nhắn được xuất bản từ các Publisher (URL Service, Gateway, Analytics Service) đều được cấu hình lưu đĩa. Kết hợp với hàng đợi Durable, hệ thống đảm bảo an toàn dữ liệu ngay cả khi cụm RabbitMQ gặp sự cố sập nguồn đột ngột.
+* **DeliveryMode = 2 (Persistent):** Toàn bộ tin nhắn được xuất bản từ các Publisher (URL Service (qua Outbox Coordinator), Analytics Service) đều được cấu hình lưu đĩa. Kết hợp với hàng đợi Durable, hệ thống đảm bảo an toàn dữ liệu ngay cả khi cụm RabbitMQ gặp sự cố sập nguồn đột ngột.
 
 ---
 
@@ -201,12 +194,14 @@ Luồng xử lý bất đồng bộ từ lúc Gateway phát sinh click cho đế
 ```mermaid
 sequenceDiagram
     autonumber
-    participant Gateway
+    participant "URL Service" as URLSvc
+    participant Outbox
     participant RabbitMQ
     participant Analytics as Analytics Service
     participant PostgreSQL
 
-    Gateway->>RabbitMQ: Publish URLClickedEvent (routing: "url.clicked")
+    URLSvc->>Outbox: Insert URLClickedEvent (Transactional Outbox)
+    Outbox->>RabbitMQ: Publish URLClickedEvent (routing: "url.clicked")
     RabbitMQ->>Analytics: Phân phối tới queue "analytics.clicks"
     Note over Analytics: Giải mã JSON & Kiểm tra tính hợp lệ dữ liệu
     Note over Analytics: Khởi tạo DATABASE TRANSACTION
@@ -589,7 +584,7 @@ URL Service đóng vai trò là Publisher (Người phát tin nhắn). Khi mất
 | Event | Producer | Routing Key | Queues | Payload Fields |
 |---|---|---|---|---|
 | **URLCreatedEvent** | URL Service | `url.created` | `notifications.events` | `ShortCode`, `OriginalURL`, `UserID`, `UserEmail`, `ExpiresAt` |
-| **URLClickedEvent** | Gateway | `url.clicked` | `analytics.clicks` | `ShortCode`, `UserID`, `UserEmail`, `IPHash`, `UserAgent`, `Referer`, `ClickedAt` |
+| **URLClickedEvent** | URL Service (qua Outbox Coordinator) | `url.clicked` | `analytics.clicks` | `ShortCode`, `UserID`, `UserEmail`, `IPHash`, `UserAgent`, `Referer`, `ClickedAt` |
 | **URLDeletedEvent** | URL Service | `url.deleted` | `notifications.events` | `ShortCode`, `UserID`, `UserEmail` |
 | **MilestoneReachedEvent** | Analytics Svc | `milestone.reached` | `notifications.events` | `ShortCode`, `UserID`, `UserEmail`, `MilestoneN`, `TotalClicks` |
 
@@ -623,8 +618,7 @@ URL Service đóng vai trò là Publisher (Người phát tin nhắn). Khi mất
 | `RABBITMQ_URL` | Bắt buộc | Bắt buộc | Chuỗi kết nối tới Broker RabbitMQ |
 | `PORT` | Optional (Mặc định `8080`) | Optional (Mặc định `8080`) | Cổng lắng nghe của HTTP Server |
 | `JWT_SECRET` | Không dùng | Bắt buộc | Khóa giải mã chữ ký số JWT của người dùng |
-| `IP_HASH_SALT` | Bắt buộc | Không dùng | Muối (Salt) dùng để băm IP chống dịch ngược |
-| `SERVICE_NAME` | `analytics-service` | `notification-service` | Định danh dịch vụ trong cấu hình Log |
+| `IP_HASH_SALT` | Tùy chọn | Không dùng | Muối (Salt) dùng để băm IP chống dịch ngược |
 
 ---
 
@@ -667,7 +661,7 @@ flowchart TD
     
     subgraph Producers [Nguồn Phát Sự Kiện]
         URLSvc["URL Service"]:::service
-        Gateway["Gateway Router"]:::service
+        URLSvcOutbox["URL Service (Outbox)"]:::service
         AnalyticsSvcPub["Analytics Service (Publisher)"]:::service
     end
 
@@ -684,7 +678,7 @@ flowchart TD
     end
 
     URLSvc -->|"url.created<br>url.deleted"| Exchange
-    Gateway -->|"url.clicked"| Exchange
+    URLSvcOutbox -->|"url.clicked"| Exchange
     AnalyticsSvcPub -->|"milestone.reached"| Exchange
 
     Exchange -->|"routing: url.clicked"| QueueClicks

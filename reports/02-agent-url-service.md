@@ -1,13 +1,6 @@
 # Phân Tích Chi Tiết URL Service — Microservice Rút Gọn URL
 
-> **Tác giả:** Agent AI  
-> **Dự án:** url-shortener-microservices  
-> **Ngày:** 2026-07-12  
-> **Phiên bản phân tích:** v1.5  
-> **Phạm vi phân tích:** Thiết kế kiến trúc và mô hình hóa URL Service
-
 ---
-
 ## Mục Lục
 
 1. [Tổng Quan URL Service](#1-tổng-quan-url-service)

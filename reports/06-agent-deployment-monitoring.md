@@ -1,13 +1,6 @@
 # Phân Tích Chi Tiết: Deployment, Docker Compose, Kubernetes, CI/CD và Monitoring
 
-> **Dự án:** URL Shortener Microservices  
-> **Tác giả:** Agent AI  
-> **Ngày:** 2026-07-11  
-> **Phiên bản:** 1.0  
-> **Mục tiêu:** Phân tích toàn diện hệ thống triển khai, từ Docker Compose cho môi trường phát triển đến Kubernetes cho sản xuất, CI/CD pipeline, và toàn bộ stack monitoring (Prometheus, Grafana, Loki, Promtail).
-
 ---
-
 ## Mục Lục
 
 1. [Tổng Quan Kiến Trúc Triển Khai](#1-tổng-quan-kiến-trúc-triển-khai)
@@ -142,7 +135,7 @@ Dưới đây là bảng tổng hợp danh sách các container, image tương �
 | `url-service` | Build local (Go) | `8081:8080` | Microservice URL. Healthcheck: `wget /health` (10s interval, 5 retries) |
 | `analytics-service`| Build local (Go) | `8082:8080` | Microservice Analytics. Healthcheck: `wget /health` |
 | `user-service` | Build local (Go) | `8083:8080` | Microservice User. Healthcheck: `wget /health` |
-| `notification-svc` | Build local (Go) | `8084:8080` | Microservice Notification. Healthcheck: `wget /health` |
+| `notification-service` | Build local (Go) | `8084:8080` | Microservice Notification. Healthcheck: `wget /health` |
 | `gateway` | Build local (Go) | `8080:8080` | API Gateway chính. Healthcheck: `wget /health` |
 | `frontend` | Build local (Node) | `5173:5173` | React/Vite dev server. Không có healthcheck |
 | `prometheus` | `prom/prometheus:v2.53.0` | `9090:9090` | Thu thập metrics. Không có healthcheck |
@@ -163,10 +156,10 @@ Dưới đây là bảng tổng hợp danh sách các container, image tương �
 ### 2.3. Quy trình Build Docker (Dockerfiles)
 
 Các thành phần trong hệ thống được đóng gói thông qua Dockerfile riêng biệt:
-- **Go Services & Gateway:** Áp dụng quy trình build 2 giai đoạn (multi-stage build):
-  - *Giai đoạn 1 (Build):* Sử dụng `golang:1.23-alpine` làm môi trường biên dịch mã nguồn.
-  - *Giai đoạn 2 (Runtime):* Sử dụng `alpine:latest` làm môi trường chạy, chỉ sao chép file binary đã biên dịch từ Giai đoạn 1 nhằm giảm tối đa dung lượng ảnh (còn khoảng ~15 MB) và nâng cao tính bảo mật.
-  - *Khuyến nghị tối ưu:* Cấu hình build tĩnh (`CGO_ENABLED=0`), nén binary (`-ldflags="-s -w"`), thêm thư viện chứng thực SSL (`ca-certificates`), và tối ưu hóa thứ tự copy file (`go.mod` / `go.sum` trước) để tận dụng Docker layer cache.
+- **Go Services & Gateway:** Quy trình build 2 giai đoạn (multi-stage build):
+  - *Giai đoạn 1 (Build):* Sử dụng `golang:1.23-alpine`, copy toàn bộ mã nguồn (`COPY . .`), và biên dịch bằng `go build -o main .`.
+  - *Giai đoạn 2 (Runtime):* Sử dụng `alpine:latest`, chỉ sao chép file binary đã biên dịch từ Giai đoạn 1 nhằm giảm dung lượng ảnh (~15 MB).
+  - *Khuyến nghị tối ưu:* Cấu hình build tĩnh (`CGO_ENABLED=0`), nén binary (`-ldflags="-s -w"`), thêm `ca-certificates` cho SSL, sao chép `go.mod`/`go.sum` trước để tận dụng Docker layer cache, và thêm `.dockerignore`.
 - **Frontend React/Vite:** 
   - *Môi trường phát triển:* Build 1 giai đoạn trên `node:22-alpine` chạy dev mode (`npm run dev`) để hỗ trợ hot-reload.
   - *Khuyến nghị Production:* Đóng gói multi-stage (Giai đoạn 1 build code static, Giai đoạn 2 sử dụng Nginx alpine phục vụ static assets).
@@ -238,7 +231,7 @@ Kubernetes sử dụng `readinessProbe` để kiểm tra khả năng sẵn sàng
 - **Microservices & Gateway:** Thực hiện HTTP GET đến endpoint `/health` trên cổng `8080`.
 - **Redis / RabbitMQ / Postgres:** Sử dụng các lệnh kiểm tra nội bộ thông qua cơ chế `exec` (`redis-cli ping`, `rabbitmq-diagnostics ping`, và `pg_isready`).
 
-### 5.3. So Sánh và Đối Chiếu
+### 4.3. So Sánh và Đối Chiếu
 
 | Đặc Điểm | Docker Compose Healthcheck | Kubernetes ReadinessProbe |
 |----------|--------------------------|---------------------------|

@@ -1,12 +1,6 @@
 # Báo Cáo Phân Tích Kiến Trúc Hệ Thống URL Shortener Microservices
 
-> **Tác giả:** AI Agent (phân tích tự động)
-> **Ngày:** 2026-07-12
-> **Phiên bản:** v1.1 (Bản rút gọn - Tập trung kiến trúc)
-> **Mục tiêu:** Báo cáo chi tiết kiến trúc hệ thống, các quyết định thiết kế DDD, mô hình dữ liệu, phân tích bảo mật, hiệu năng và khuyến nghị cải thiện (đã lược bỏ chi tiết mã nguồn không cần thiết).
-
 ---
-
 ## Mục Lục
 
 1. [Tổng Quan Kiến Trúc Microservices](#1-tổng-quan-kiến-trúc-microservices)
