@@ -1,0 +1,80 @@
+direction: down
+
+classes: {
+    db: {
+        style: {
+            fill: "#85C1E9"
+            stroke: "#2C3E50"
+            stroke-width: 2
+        }
+    }
+    svc: {
+        style: {
+            fill: "#82E0AA"
+            stroke: "#2C3E50"
+            stroke-width: 2
+        }
+    }
+    monitor: {
+        style: {
+            fill: "#D7BDE2"
+            stroke: "#2C3E50"
+            stroke-width: 2
+        }
+    }
+}
+
+url_db: url_db
+analytics_db: analytics_db
+user_db: user_db
+notification_db: notification_db
+redis: redis
+rabbitmq: rabbitmq
+
+url-service: url-service
+analytics-service: analytics-service
+user-service: user-service
+notification-service: notification-service
+gateway: gateway
+nginx: nginx
+frontend: frontend
+prometheus: prometheus
+grafana: grafana
+loki: loki
+promtail: promtail
+
+url_db.class: db
+analytics_db.class: db
+user_db.class: db
+notification_db.class: db
+redis.class: db
+rabbitmq.class: db
+url-service.class: svc
+analytics-service.class: svc
+user-service.class: svc
+notification-service.class: svc
+gateway.class: svc
+prometheus.class: monitor
+grafana.class: monitor
+loki.class: monitor
+promtail.class: monitor
+
+url-service -> url_db
+url-service -> redis
+url-service -> rabbitmq
+analytics-service -> analytics_db
+analytics-service -> rabbitmq
+user-service -> user_db
+notification-service -> notification_db
+notification-service -> rabbitmq
+gateway -> url-service
+gateway -> analytics-service
+gateway -> user-service
+gateway -> notification-service
+nginx -> gateway
+nginx -> frontend
+frontend -> gateway
+prometheus -> gateway
+grafana -> prometheus
+grafana -> loki
+promtail -> loki

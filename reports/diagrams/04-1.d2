@@ -1,0 +1,9 @@
+direction: up
+CLOSED: CLOSED
+OPEN: OPEN
+HALF_OPEN: HALF_OPEN
+
+CLOSED -> OPEN: 5 failures trong 10s
+OPEN -> HALF_OPEN: "Sau 30s, request\nđầu tiên vào"
+HALF_OPEN -> CLOSED: Probe success
+HALF_OPEN -> OPEN: "Probe fail\n(reset timer)"

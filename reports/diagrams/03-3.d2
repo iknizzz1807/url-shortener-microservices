@@ -1,0 +1,16 @@
+shape: sequence_diagram
+Source: URL Service / Analytics
+RabbitMQ: RabbitMQ
+Notification: Notification Service
+PostgreSQL: PostgreSQL
+
+Source -> RabbitMQ: Publish Event (url.created / url.deleted / milestone.reached)
+RabbitMQ -> Notification: Phân phối tới queue \"notifications.events\"
+Note over Notification: Giải mã JSON & Đọc Event Type từ Routing Key
+Note over Notification: Khởi tạo DATABASE TRANSACTION
+Notification -> PostgreSQL: INSERT INTO notifications (status='pending')
+PostgreSQL -> Notification: Trả về notification_id và created_at
+Note over Notification: Ghi nhận Log giả lập gửi email (Mock Email Sent)
+Notification -> PostgreSQL: UPDATE notifications SET status='sent', sent_at=now() WHERE id
+Notification -> PostgreSQL: COMMIT TRANSACTION
+Notification -> RabbitMQ: Phản hồi ACK (Xóa tin nhắn khỏi queue notifications.events)

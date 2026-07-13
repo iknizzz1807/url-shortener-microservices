@@ -35,25 +35,7 @@
 | `usersdb` | User Service | `user_db` | 5434 |
 | `notificationdb` | Notification Service | `notification_db` | 5435 |
 
-```mermaid
-flowchart LR
-    subgraph S["Services"]
-        US[URL Service]
-        AS[Analytics Service]
-        NS[Notification Service]
-        URS[User Service]
-    end
-    subgraph D["Databases"]
-        UDB[(urldb<br/>5432)]
-        ADB[(analyticsdb<br/>5433)]
-        UUDB[(usersdb<br/>5434)]
-        NDB[(notificationdb<br/>5435)]
-    end
-    US --> UDB
-    AS --> ADB
-    NS --> NDB
-    URS --> UUDB
-```
+<img src="diagrams/05-1.png" alt="Database-per-service architecture">
 
 ---
 
@@ -281,18 +263,7 @@ healthcheck:
 
 ### depends_on chain
 
-```mermaid
-flowchart LR
-    url_db --> url-service
-    analytics_db --> analytics-service
-    user_db --> user-service
-    notification_db --> notification-service
-    url-service --> gateway
-    analytics-service --> gateway
-    user-service --> gateway
-    notification-service --> gateway
-    gateway --> nginx
-```
+<img src="diagrams/05-2.png" alt="Depends_on chain">
 
 ---
 

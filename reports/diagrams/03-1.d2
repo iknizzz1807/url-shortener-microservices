@@ -1,0 +1,14 @@
+direction: up
+
+url_shortener_exchange: url-shortener (Topic Exchange)
+analytics_clicks_queue: analytics.clicks (Durable Queue)
+notifications_events_queue: notifications.events (Durable Queue)
+analytics_service: Analytics Service (ClickConsumer)
+notification_service: Notification Service (NotificationConsumer)
+
+url_shortener_exchange -> analytics_clicks_queue: routing: url.clicked
+url_shortener_exchange -> notifications_events_queue: routing: url.created
+url_shortener_exchange -> notifications_events_queue: routing: url.deleted
+url_shortener_exchange -> notifications_events_queue: routing: milestone.reached
+analytics_clicks_queue -> analytics_service
+notifications_events_queue -> notification_service

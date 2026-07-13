@@ -1,0 +1,40 @@
+direction: up
+
+User1: "Authenticated User"
+CmdCreate: "Command: Create Short URL"
+Agg1: "Aggregate: ShortURL"
+EvtCreated: "Event: url.created"
+NotifSvc1: "Notification Service"
+AnalSvc1: "Analytics Service"
+
+User2: "Anonymous User"
+CmdClick: "Command: Click Short URL"
+Agg2: "Aggregate: ShortURL"
+EvtClicked: "Event: url.clicked"
+AnalSvc2: "Analytics Service"
+EvtMilestone: "Event: milestone.reached"
+NotifSvc2: "Notification Service"
+
+User3: "Owner / Auth User"
+CmdDelete: "Command: Delete Short URL"
+Agg3: "Aggregate: ShortURL"
+EvtDeleted: "Event: url.deleted"
+NotifSvc3: "Notification Service"
+
+User1 -> CmdCreate
+CmdCreate -> Agg1
+Agg1 -> EvtCreated: "1. Register & Validate\n2. Generate Code\n3. Store URL & Outbox"
+EvtCreated -> NotifSvc1
+EvtCreated -> AnalSvc1
+
+User2 -> CmdClick
+CmdClick -> Agg2
+Agg2 -> EvtClicked: "1. Check Cache\n2. Query DB\n3. Redirect 308"
+EvtClicked -> AnalSvc2
+AnalSvc2 -> EvtMilestone: "1. Deduplicate\n2. Insert Click\n3. Check Threshold"
+EvtMilestone -> NotifSvc2
+
+User3 -> CmdDelete
+CmdDelete -> Agg3
+Agg3 -> EvtDeleted: "1. Deactivate URL\n2. Invalidate Cache"
+EvtDeleted -> NotifSvc3

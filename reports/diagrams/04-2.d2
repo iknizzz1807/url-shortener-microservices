@@ -1,0 +1,13 @@
+shape: sequence_diagram
+Client: Client
+G: API Gateway
+JWT: JWT Middleware
+Upstream: Upstream Service
+
+Client -> G: POST /api/shorten (Authorization: Bearer <token>)
+G -> JWT: Extract Bearer token
+JWT -> JWT: VerifyToken(token, secret)
+JWT -> G: Pass (context với claims)
+G -> Upstream: Forward request (context mang claims)
+Upstream -> G: 200 OK response
+G -> Client: 200 OK

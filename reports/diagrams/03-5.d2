@@ -1,0 +1,24 @@
+direction: left
+
+GiaiDoan1: Giai đoạn 1 (Immediate - P0)
+GiaiDoan1Item1: Khắc phục lỗi mất kết nối Runtime
+GiaiDoan1Item2: Tích hợp NotifyClose tự phục hồi kết nối
+
+GiaiDoan2: Giai đoạn 2 (High - P1)
+GiaiDoan2Item1: Bảo vệ hàng đợi & Chống trùng lặp
+GiaiDoan2Item2: Cấu hình Dead Letter Queue (DLQ) cho RabbitMQ
+GiaiDoan2Item3: Thêm Deduplication cho Notification Service
+
+GiaiDoan3: Giai đoạn 3 (Medium - P2)
+GiaiDoan3Item1: Tối ưu hóa dữ liệu & Giám sát
+GiaiDoan3Item2: Thêm TTL cleanup job cho bảng processed_events
+GiaiDoan3Item3: "Nâng cấp API Timeline\nhỗ trợ lọc khoảng thời gian"
+GiaiDoan3Item4: "Tích hợp kiểm tra\nReadiness Check thực tế cho Database"
+
+GiaiDoan4: Giai đoạn 4 (Low - P3)
+GiaiDoan4Item1: Tái cấu trúc mã nguồn
+GiaiDoan4Item2: "Chuyển các module dùng chung\n(db, rabbitmq, auth) thành Shared Library"
+
+GiaiDoan1 -> GiaiDoan2
+GiaiDoan2 -> GiaiDoan3
+GiaiDoan3 -> GiaiDoan4

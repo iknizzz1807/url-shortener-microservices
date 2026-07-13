@@ -156,25 +156,7 @@ Hệ thống sử dụng một Exchange duy nhất kiểu **Topic** với tên `
 
 ### 3.4. Sơ Đồ Routing
 
-```mermaid
-graph TD
-    classDef broker fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef service fill:#bbf,stroke:#333,stroke-width:2px;
-
-    Exchange["url-shortener<br>(Topic Exchange)"]:::broker
-    QueueAnalytics["analytics.clicks<br>(Durable Queue)"]:::broker
-    QueueNotification["notifications.events<br>(Durable Queue)"]:::broker
-    AnalyticsSvc["Analytics Service<br>(ClickConsumer)"]:::service
-    NotificationSvc["Notification Service<br>(NotificationConsumer)"]:::service
-
-    Exchange -->|"routing: url.clicked"| QueueAnalytics
-    Exchange -->|"routing: url.created"| QueueNotification
-    Exchange -->|"routing: url.deleted"| QueueNotification
-    Exchange -->|"routing: milestone.reached"| QueueNotification
-
-    QueueAnalytics --> AnalyticsSvc
-    QueueNotification --> NotificationSvc
-```
+<img src="diagrams/03-1.png" alt="Event flow overview - RabbitMQ routing diagram">
 
 ### 3.5. AMQP Prefetch (QoS)
 Cấu hình **QoS Prefetch Count = 1** được thiết lập trên cả hai consumers. 
@@ -191,58 +173,12 @@ Cấu hình **QoS Prefetch Count = 1** được thiết lập trên cả hai con
 ### 4.1. Sơ Đồ Luồng Sự Kiện Click (Luồng Chính)
 Luồng xử lý bất đồng bộ từ lúc Gateway phát sinh click cho đến khi Analytics Service cập nhật dữ liệu, kiểm tra cột mốc và gửi tín hiệu mốc click:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant "URL Service" as URLSvc
-    participant Outbox
-    participant RabbitMQ
-    participant Analytics as Analytics Service
-    participant PostgreSQL
-
-    URLSvc->>Outbox: Insert URLClickedEvent (Transactional Outbox)
-    Outbox->>RabbitMQ: Publish URLClickedEvent (routing: "url.clicked")
-    RabbitMQ->>Analytics: Phân phối tới queue "analytics.clicks"
-    Note over Analytics: Giải mã JSON & Kiểm tra tính hợp lệ dữ liệu
-    Note over Analytics: Khởi tạo DATABASE TRANSACTION
-    Analytics->>PostgreSQL: SELECT EXISTS trong processed_events (event_id)
-    PostgreSQL-->>Analytics: exists = false (Sự kiện chưa được xử lý)
-    Analytics->>PostgreSQL: INSERT INTO processed_events (event_id)
-    Analytics->>PostgreSQL: INSERT INTO clicks (short_code, clicked_at, ip_hash, ...)
-    Note over Analytics: Logic kiểm tra mốc Click (CheckAndPublish)
-    Analytics->>PostgreSQL: SELECT COUNT(*) FROM clicks WHERE short_code
-    PostgreSQL-->>Analytics: Trả về total_clicks (Ví dụ: 100)
-    Analytics->>PostgreSQL: SELECT EXISTS trong milestones WHERE milestone=100
-    PostgreSQL-->>Analytics: exists = false (Mốc này chưa từng đạt được)
-    Analytics->>PostgreSQL: INSERT INTO milestones (short_code, milestone=100)
-    Analytics->>RabbitMQ: Publish MilestoneReachedEvent (routing: "milestone.reached")
-    RabbitMQ-->>Analytics: Nhận sự kiện & Định tuyến tới notifications.events queue
-    Analytics->>PostgreSQL: COMMIT TRANSACTION
-    Analytics->>RabbitMQ: Phản hồi ACK (Xóa tin nhắn khỏi queue analytics.clicks)
-```
+<img src="diagrams/03-2.png" alt="Analytics event processing sequence diagram">
 
 ### 4.2. Sơ Đồ Luồng Sự Kiện Notification
 Luồng lưu trữ thông báo và giả lập gửi email cho khách hàng khi nhận các sự kiện hệ thống:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Source as URL Service / Analytics
-    participant RabbitMQ
-    participant Notification as Notification Service
-    participant PostgreSQL
-
-    Source->>RabbitMQ: Publish Event (url.created / url.deleted / milestone.reached)
-    RabbitMQ->>Notification: Phân phối tới queue "notifications.events"
-    Note over Notification: Giải mã JSON & Đọc Event Type từ Routing Key
-    Note over Notification: Khởi tạo DATABASE TRANSACTION
-    Notification->>PostgreSQL: INSERT INTO notifications (status='pending')
-    PostgreSQL-->>Notification: Trả về notification_id và created_at
-    Note over Notification: Ghi nhận Log giả lập gửi email (Mock Email Sent)
-    Notification->>PostgreSQL: UPDATE notifications SET status='sent', sent_at=now() WHERE id
-    Notification->>PostgreSQL: COMMIT TRANSACTION
-    Notification->>RabbitMQ: Phản hồi ACK (Xóa tin nhắn khỏi queue notifications.events)
-```
+<img src="diagrams/03-3.png" alt="Notification flow sequence diagram">
 
 ---
 
@@ -450,19 +386,7 @@ Quy trình tương đồng với Analytics Service, sử dụng cơ chế Expone
 ### 7.2. Analytics Service Delivery Guarantee
 Đạt mức **Exactly-once** nhờ thiết kế phối hợp:
 
-```mermaid
-flowchart TD
-    Producer([Producer]) --> RabbitMQ{RabbitMQ}
-    RabbitMQ --> Consumer[Consumer (autoAck=false)]
-    Consumer --> Check{Kiểm tra Event ID<br>đã tồn tại trong DB?}
-    Check -->|Đã tồn tại| AckDiscard[Phản hồi ACK & Bỏ qua xử lý]
-    Check -->|Chưa tồn tại| Process[Bắt đầu Xử lý sự kiện]
-    Process --> DBTx{Database Transaction}
-    DBTx -->|Ghi dữ liệu thành công| Commit[Commit Transaction]
-    Commit --> Ack[Phản hồi ACK gửi Broker]
-    DBTx -->|Lỗi ghi dữ liệu| Rollback[Rollback Transaction]
-    Rollback --> Nack[Phản hồi NACK & Đưa lại Queue]
-```
+<img src="diagrams/03-4.png" alt="Delivery reliability flowchart">
 
 ### 7.3. Notification Service Delivery Guarantee
 Đạt mức **At-least-once**.
@@ -639,14 +563,7 @@ URL Service đóng vai trò là Publisher (Người phát tin nhắn). Khi mất
 
 ### 11.3. Lộ Trình Cải Tiến Khuyến Nghị
 
-```mermaid
-timeline
-    title Lộ trình nâng cấp kiến trúc hệ thống
-    Giai đoạn 1 (Immediate - P0) : Khắc phục lỗi mất kết nối Runtime : Tích hợp NotifyClose tự phục hồi kết nối
-    Giai đoạn 2 (High - P1) : Bảo vệ hàng đợi & Chống trùng lặp : Cấu hình Dead Letter Queue (DLQ) cho RabbitMQ : Thêm Deduplication cho Notification Service
-    Giai đoạn 3 (Medium - P2) : Tối ưu hóa dữ liệu & Giám sát : Thêm TTL cleanup job cho bảng processed_events : Nâng cấp API Timeline hỗ trợ lọc khoảng thời gian : Tích hợp kiểm tra Readiness Check thực tế cho Database
-    Giai đoạn 4 (Low - P3) : Tái cấu trúc mã nguồn : Chuyển các module dùng chung (db, rabbitmq, auth) thành Shared Library
-```
+<img src="diagrams/03-5.png" alt="Milestone improvement roadmap">
 
 ---
 
@@ -654,39 +571,4 @@ timeline
 
 Sơ đồ tổng quan mô tả dòng chảy của các loại sự kiện chạy xuyên suốt qua hệ thống URL Shortener:
 
-```mermaid
-flowchart TD
-    classDef broker fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef service fill:#bbf,stroke:#333,stroke-width:2px;
-    
-    subgraph Producers [Nguồn Phát Sự Kiện]
-        URLSvc["URL Service"]:::service
-        URLSvcOutbox["URL Service (Outbox)"]:::service
-        AnalyticsSvcPub["Analytics Service (Publisher)"]:::service
-    end
-
-    Exchange["url-shortener exchange<br>(Topic Exchange)"]:::broker
-
-    subgraph Queues [Hàng Đợi RabbitMQ]
-        QueueClicks["analytics.clicks queue<br>(Durable)"]:::broker
-        QueueEvents["notifications.events queue<br>(Durable)"]:::broker
-    end
-
-    subgraph Consumers [Nguồn Tiêu Thụ Sự Kiện]
-        AnalyticsSvcCons["Analytics Service (Consumer)"]:::service
-        NotificationSvcCons["Notification Service (Consumer)"]:::service
-    end
-
-    URLSvc -->|"url.created<br>url.deleted"| Exchange
-    URLSvcOutbox -->|"url.clicked"| Exchange
-    AnalyticsSvcPub -->|"milestone.reached"| Exchange
-
-    Exchange -->|"routing: url.clicked"| QueueClicks
-    Exchange -->|"routing: url.created, url.deleted, milestone.reached"| QueueEvents
-
-    QueueClicks --> AnalyticsSvcCons
-    QueueEvents --> NotificationSvcCons
-
-    %% Ép buộc sắp xếp chồng đứng để tối ưu hóa hiển thị
-    Producers ~~~ Exchange ~~~ Queues ~~~ Consumers
-```
+<img src="diagrams/03-6.png" alt="Overall event flow diagram">

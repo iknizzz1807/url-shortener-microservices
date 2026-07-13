@@ -1,0 +1,19 @@
+shape: sequence_diagram
+OS: OS Signal
+Main: func main()
+Ctx: Root Context
+OC: Outbox Coordinator
+SRV: HTTP Server
+DB: PostgreSQL
+MQ: RabbitMQ
+
+OS -> Main: SIGINT / SIGTERM
+Main -> Ctx: cancel()
+Ctx -> OC: ctx.Done() -> poll and workers stop
+note: Drain jobs channel, Worker finish current publish
+Main -> SRV: Shutdown(shutdownCtx, 10s timeout)
+note: Drain in-flight requests, Reject new connections
+SRV -> Main: OK / Timeout
+Main -> DB: defer pool.Close()
+Main -> MQ: defer rmqConn.Close()
+note: All connections closed

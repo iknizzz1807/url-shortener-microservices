@@ -50,42 +50,7 @@ Hệ thống được thiết kế theo kiến trúc microservices với **5 ser
 
 ### 1.4 Sơ Đồ Kiến Trúc Tổng Thể
 
-```mermaid
-graph TD
-    Client[Client / Browser] -->|Port 80| Nginx[Nginx Reverse Proxy]
-    Nginx -->|Static Files Port 5173| Frontend[Frontend SPA\nVite + React]
-    Nginx -->|/api/ or /r/| Gateway[API Gateway\nGo 1.23 Port 8080]
-
-    subgraph Internal Network
-        Gateway -->|HTTP Port 8083| UserService[User Service]
-        Gateway -->|HTTP Port 8081| URLService[URL Service]
-        Gateway -->|HTTP Port 8084| NotificationService[Notification Service]
-        Gateway -->|HTTP Port 8082| AnalyticsService[Analytics Service]
-
-        UserService --> UserDB[(PostgreSQL\nuser_db Port 5434)]
-        URLService --> URLDB[(PostgreSQL\nurl_db Port 5432)]
-        NotificationService --> NotifDB[(PostgreSQL\nnotif_db Port 5435)]
-        AnalyticsService --> AnalyticsDB[(PostgreSQL\nanalytics_db Port 5433)]
-
-        %% Redis Connections
-        Gateway -.->|Rate Limiting| RedisCache[(Redis Port 6379)]
-        URLService -.->|URL Cache| RedisCache
-
-        %% RabbitMQ Connections
-        URLService ==>|Publish Events| RabbitMQ{RabbitMQ\nTopic Exchange}
-        AnalyticsService ==>|Publish Milestone| RabbitMQ
-        RabbitMQ -.->|Consume| AnalyticsService
-        RabbitMQ -.->|Consume| NotificationService
-    end
-
-    classDef db fill:#ffccd5,stroke:#ff4d6d,stroke-width:2px;
-    classDef svc fill:#e8f0fe,stroke:#4285f4,stroke-width:2px;
-    classDef broker fill:#fff3cd,stroke:#ffc107,stroke-width:2px;
-
-    class UserDB,URLDB,NotifDB,AnalyticsDB db;
-    class UserService,URLService,NotificationService,AnalyticsService,Gateway,Frontend,Nginx svc;
-    class RedisCache,RabbitMQ broker;
-```
+<img src="diagrams/01-1.png" alt="Architecture Overview">
 
 ---
 
@@ -146,46 +111,7 @@ Mối quan hệ giữa các Bounded Context được định nghĩa thông qua c
 
 #### Sơ đồ Luồng Sự Kiện (Event Flow Diagram - Event Storming)
 
-```mermaid
-flowchart TD
-    %% Styling Definitions
-    classDef actor fill:#FFE5CC,stroke:#F4B084,stroke-width:2px;
-    classDef command fill:#DDEBF7,stroke:#9BC2E6,stroke-width:2px;
-    classDef aggregate fill:#FFF2CC,stroke:#FFD966,stroke-width:2px;
-    classDef event fill:#FCE4D6,stroke:#F8CBAD,stroke-width:2px;
-    classDef service fill:#E2F0D9,stroke:#A9D08E,stroke-width:2px;
-
-    %% 1. Create Short URL Flow
-    subgraph CreateShortURLFlow [1. Create Short URL Flow]
-        User1([Authenticated User]):::actor --> CmdCreate[Command: Create Short URL]:::command
-        CmdCreate --> Agg1[Aggregate: ShortURL]:::aggregate
-        Agg1 -->|1. Register & Validate<br/>2. Generate Code<br/>3. Store URL & Outbox| EvtCreated[Event: url.created]:::event
-        EvtCreated --> NotifSvc1[Notification Service]:::service
-        EvtCreated --> AnalSvc1[Analytics Service]:::service
-    end
-
-    %% 2. Click Short URL Flow
-    subgraph ClickShortURLFlow [2. Click Short URL Flow]
-        User2([Anonymous User]):::actor --> CmdClick[Command: Click Short URL]:::command
-        CmdClick --> Agg2[Aggregate: ShortURL]:::aggregate
-        Agg2 -->|1. Check Cache<br/>2. Query DB<br/>3. Redirect 308| EvtClicked[Event: url.clicked]:::event
-        EvtClicked --> AnalSvc2[Analytics Service]:::service
-        AnalSvc2 -->|1. Deduplicate<br/>2. Insert Click<br/>3. Check Threshold| EvtMilestone[Event: milestone.reached]:::event
-        EvtMilestone --> NotifSvc2[Notification Service]:::service
-    end
-
-    %% 3. Delete Short URL Flow
-    subgraph DeleteShortURLFlow [3. Delete Short URL Flow]
-        User3([Owner / Auth User]):::actor --> CmdDelete[Command: Delete Short URL]:::command
-        CmdDelete --> Agg3[Aggregate: ShortURL]:::aggregate
-        Agg3 -->|1. Deactivate URL<br/>2. Invalidate Cache| EvtDeleted[Event: url.deleted]:::event
-        EvtDeleted --> NotifSvc3[Notification Service]:::service
-    end
-
-    %% Force vertical layout mapping
-    CreateShortURLFlow ~~~ ClickShortURLFlow
-    ClickShortURLFlow ~~~ DeleteShortURLFlow
-```
+<img src="diagrams/01-2.png" alt="Event Storming Flow">
 
 ### 2.4 Aggregate Roots
 
@@ -338,17 +264,7 @@ Trước khi chuyển tiếp request đến các route yêu cầu xác thực (`
 ### 3.7 Circuit Breaker State Machine
 Bảo vệ Gateway khỏi tình trạng cascading failure khi URL Service gặp sự cố:
 
-```mermaid
-stateDiagram-v2
-    [*] --> CLOSED
-    
-    CLOSED --> OPEN : failures >= maxFailures\n(trong failureWindow)
-    
-    OPEN --> HALF_OPEN : openTimeout expired\n(next request arrives as probe)
-    
-    HALF_OPEN --> CLOSED : success (probe request succeeded)
-    HALF_OPEN --> OPEN : failure (probe request failed, reset timer)
-```
+<img src="diagrams/01-3.png" alt="Circuit Breaker State Machine">
 
 - **CLOSED**: Requests được chuyển tiếp bình thường.
 - **OPEN**: Requests bị reject ngay lập tức tại Gateway với HTTP 503 Service Unavailable mà không gọi upstream.
@@ -408,34 +324,7 @@ Các thư viện dùng chung được định nghĩa độc lập để tránh t
 
 Nhằm giải quyết bài toán phân tán dữ liệu mà không cần dùng Distributed Transactions (như 2PC), hệ thống áp dụng Transactional Outbox Pattern:
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client
-    participant URLSvc as URL Service
-    participant DB as PostgreSQL (url_db)
-    participant OutboxCoord as Outbox Coordinator
-    participant RabbitMQ as RabbitMQ Broker
-
-    Client->>URLSvc: POST /api/shorten
-    
-    rect rgb(240, 248, 255)
-        Note over URLSvc, DB: Local Transaction (Atomic)
-        URLSvc->>DB: 1. INSERT INTO urls (...)
-        URLSvc->>DB: 2. INSERT INTO outbox (event_type, payload)
-        URLSvc->>DB: COMMIT TRANSACTION
-    end
-    
-    URLSvc-->>Client: 201 Created (short_code, ...)
-
-    loop Mỗi 2 giây (Background Polling)
-        OutboxCoord->>DB: SELECT FOR UPDATE SKIP LOCKED (LIMIT 50)
-        DB-->>OutboxCoord: Trả về các events chưa gửi
-        Note over OutboxCoord: Khóa events (locked_until = now + 30s)
-        OutboxCoord->>RabbitMQ: Publish events (Topic Exchange)
-        OutboxCoord->>DB: UPDATE outbox SET published_at = now()
-    end
-```
+<img src="diagrams/01-4.png" alt="Outbox Transaction Pattern">
 
 Cơ chế này đảm bảo thuộc tính **At-Least-Once Delivery** – tin nhắn chắc chắn sẽ được gửi đi, dù cho broker RabbitMQ có bị down tại thời điểm tạo URL.
 
@@ -499,7 +388,7 @@ Hệ thống được tích hợp sẵn giải pháp quan sát toàn diện:
 
 1. Hệ thống sinh số ngẫu nhiên lớn bằng `crypto/rand` (đảm bảo tính ngẫu nhiên an toàn cao hơn `math/rand`).
 2. Sử dụng thuật toán Base62 (`math/big`) để mã hóa số ngẫu nhiên này thành chuỗi ký tự chứa `[a-zA-Z0-9]`.
-3. Số lượng mã tối đa: $62^7 \approx 3.52$ nghìn tỷ mã. Xác suất va chạm cực kỳ thấp. Hệ thống hỗ trợ retry 3 lần nếu có va chạm code trong DB.
+3. Số lượng mã tối đa: 62⁷ ≈ 3.52 nghìn tỷ mã. Xác suất va chạm cực kỳ thấp. Hệ thống hỗ trợ retry 3 lần nếu có va chạm code trong DB.
 
 ### 9.2 Outbox Coordinator Worker Pool
 
@@ -576,24 +465,7 @@ Hệ thống URL Shortener Microservices là một mô hình thiết kế chuẩ
 
 #### Luồng Authorized Request Flow
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client
-    participant Gateway as API Gateway
-    participant URLSvc as URL Service
-    participant Redis as Redis Cache
-
-    Client->>Gateway: POST /api/shorten (Authorization: Bearer <token>)
-    Note over Gateway: jwtMiddleware:<br/>1. matchRoute<br/>2. VerifyToken<br/>3. Inject claims
-    Note over Gateway: handler.ServeHTTP:<br/>1. Rate limit check<br/>2. Circuit breaker check
-    Gateway->>URLSvc: POST /shorten
-    Note over URLSvc: JWTMiddleware:<br/>1. VerifyToken<br/>2. Inject claims
-    Note over URLSvc: HandleShorten:<br/>1. Validate URL<br/>2. Generate Code<br/>3. Local Transaction:<br/>- Insert URL Record<br/>- Insert Outbox Event
-    URLSvc->>Redis: Cache URL (async)
-    URLSvc-->>Gateway: 201 Created (short_code, ...)
-    Gateway-->>Client: 201 Created (short_code, ...)
-```
+<img src="diagrams/01-5.png" alt="Security Request Flow">
 
 #### Bảng Đánh Giá Mối Đe Dọa (Security Threat Assessment)
 
@@ -607,7 +479,7 @@ sequenceDiagram
 
 ### Phụ Lục C: Phân Tích Hiệu Năng (Performance)
 
-- **Xác suất va chạm Short Code**: Với độ dài 7 ký tự Base62 ($62^7 \approx 3.52$ nghìn tỷ kết hợp), áp dụng nghịch lý ngày sinh nhật (Birthday paradox), sau khi tạo 1 triệu URLs, xác suất va chạm chỉ khoảng $1.4 \times 10^{-7}$. Với cơ chế sinh lại tối đa 3 lần, khả năng thất bại do va chạm là hoàn toàn không đáng kể ($2.7 \times 10^{-21}$).
+- **Xác suất va chạm Short Code**: Với độ dài 7 ký tự Base62 (62⁷ ≈ 3.52 nghìn tỷ kết hợp), áp dụng nghịch lý ngày sinh nhật (Birthday paradox), sau khi tạo 1 triệu URLs, xác suất va chạm chỉ khoảng 1.4×10⁻⁷. Với cơ chế sinh lại tối đa 3 lần, khả năng thất bại do va chạm là hoàn toàn không đáng kể (2.7×10⁻²¹).
 - **Hiệu năng cache**: Redis cache check được cài đặt timeout chặt chẽ ở mức 50ms. Nếu Redis phản hồi chậm, hệ thống tự động fallback sang database để tránh gây nghẽn cục bộ cho client. Tỉ lệ cache hit kỳ vọng cho flow redirect (đọc nhiều hơn ghi) là trên 90%.
 
 ### Phụ Lục D: Phân Tích Cấu Trúc File & Dòng Code (Summary)

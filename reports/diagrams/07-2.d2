@@ -1,0 +1,17 @@
+shape: sequence_diagram
+Test Script: Test Script
+Gateway: Gateway
+url-service: url-service
+analytics-service: analytics-service
+notification-service: notification-service
+Test Script -> Gateway: 1. POST /api/auth/register
+Test Script -> Gateway: 2. POST /api/auth/login -> get TOKEN
+Test Script -> Gateway: 3. POST /api/shorten (with TOKEN) -> SHORT_CODE
+Test Script -> Gateway: '4. GET /r/{SHORT_CODE} (15 times)'
+note: 5. sleep 5s (wait for outbox + consumer)
+Test Script -> analytics-service: '6. GET /api/stats/{SHORT_CODE}'
+Test Script -> notification-service: 7. GET /api/notifications
+Test Script -> Gateway: '8. DELETE /api/urls/{SHORT_CODE}'
+Test Script -> Gateway: '9. GET /r/{SHORT_CODE} -> 410 Gone'
+Test Script -> Gateway: 10. POST /api/shorten (11 times -> 429)
+Test Script -> Gateway: 11. GET /health

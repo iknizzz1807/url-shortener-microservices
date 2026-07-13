@@ -1,0 +1,16 @@
+shape: sequence_diagram
+actor: Client
+participant: URLSvc
+participant: DB
+participant: OutboxCoord
+participant: RabbitMQ
+
+Client -> URLSvc: "POST /api/shorten"
+URLSvc -> DB: "1. INSERT INTO urls (...)"
+URLSvc -> DB: "2. INSERT INTO outbox (event_type, payload)"
+URLSvc -> DB: "COMMIT TRANSACTION"
+URLSvc -> Client: "201 Created (short_code, ...)"
+OutboxCoord -> DB: "SELECT FOR UPDATE SKIP LOCKED (LIMIT 50)"
+DB -> OutboxCoord: "Trả về các events chưa gửi"
+OutboxCoord -> RabbitMQ: "Publish events (Topic Exchange)"
+OutboxCoord -> DB: "UPDATE outbox SET published_at = now()"

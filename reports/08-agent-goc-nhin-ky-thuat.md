@@ -19,29 +19,7 @@ if user == nil {
 }
 ```
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Attacker
-    participant H as HTTP Handler
-    participant S as User Store
-    participant B as bcrypt
-
-    Attacker->>H: POST /login {email, password}
-    H->>S: FindByEmail(email)
-
-    alt Email không tồn tại
-        S-->>H: nil
-        H->>B: Verify(password, dummyBcryptHash) ← cost 12
-        B-->>H: ~200ms elapsed
-        H-->>Attacker: 401 Invalid Credentials
-    else Email tồn tại
-        S-->>H: User {password_hash}
-        H->>B: Verify(password, realHash) ← cost 12
-        B-->>H: ~200ms elapsed
-        H-->>Attacker: 401 / 200 + Token
-    end
-```
+<img src="diagrams/08-1.png" alt="Timing attack login flow">
 
 ### Phân tích
 
@@ -89,26 +67,7 @@ RETURNING o.id, o.event_type, o.payload, o.created_at, o.locked_until, o.publish
 | `UPDATE ... SET locked_until = now() + 30s` | Giành quyền xử lý, các replica khác sẽ bỏ qua trong 30s |
 | `RETURNING` | Trả về dữ liệu ngay, tránh SELECT riêng |
 
-```mermaid
-flowchart TD
-    subgraph Poller [OutboxCoordinator - Poll every 2s]
-        Start([Tick]) --> CTE["CTE Query: FOR UPDATE SKIP LOCKED<br/>(batch_size=50)"]
-        CTE --> Lock["SET locked_until = now() + 30s"]
-        Lock --> Chan["Push to jobs channel (buffered 50)"]
-    end
-
-    subgraph Workers [3 Workers - goroutine pool]
-        Chan --> W1["Worker 1"]
-        Chan --> W2["Worker 2"]
-        Chan --> W3["Worker 3"]
-
-        W1 --> Pub["Publish to RabbitMQ<br/>(mutex trên channel)"]
-        Pub --> Mark["UPDATE published_at = now()<br/>locked_until = NULL"]
-
-        W2 --> Pub
-        W3 --> Pub
-    end
-```
+<img src="diagrams/08-2.png" alt="Outbox FOR UPDATE SKIP LOCKED flow">
 
 ### Thread Safety
 
@@ -138,31 +97,7 @@ Khi nhận SIGINT/SIGTERM, nếu shutdown đột ngột có thể gây:
 
 ### Giải pháp: Context Cascade + HTTP Drain
 
-```mermaid
-sequenceDiagram
-    autonumber
-    participant OS as OS Signal
-    participant Main as func main()
-    participant Ctx as Root Context
-    participant OC as Outbox Coordinator
-    participant SRV as HTTP Server
-    participant DB as PostgreSQL
-    participant MQ as RabbitMQ
-
-    OS->>Main: SIGINT / SIGTERM
-    Main->>Ctx: cancel() ← hủy context
-    Ctx->>OC: ctx.Done() → poll & workers dừng
-    Note over OC: Drain jobs channel<br/>Worker finish current publish
-
-    Main->>SRV: Shutdown(shutdownCtx, 10s timeout)
-    Note over SRV: Drain in-flight requests<br/>Reject new connections
-
-    SRV-->>Main: OK / Timeout
-
-    Main->>DB: defer pool.Close()
-    Main->>MQ: defer rmqConn.Close()
-    Note over Main: All connections closed
-```
+<img src="diagrams/08-3.png" alt="Graceful shutdown">
 
 | Bước | Hành động | Chi tiết |
 |---|---|---|

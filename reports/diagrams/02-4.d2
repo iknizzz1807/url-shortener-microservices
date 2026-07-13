@@ -1,0 +1,15 @@
+direction: up
+
+DB_Tx: "Database Transaction" {
+  "Ghi thông tin URL mới (INSERT urls)"
+  "Ghi sự kiện nghiệp vụ tạo mới (INSERT outbox)"
+  "Ghi thông tin URL mới (INSERT urls)" -> "Ghi sự kiện nghiệp vụ tạo mới (INSERT outbox)"
+}
+
+Commit: "COMMIT Transaction"
+Coordinator: "OutboxCoordinator (Quét định kỳ 2s)"
+RabbitMQ: "Đẩy sự kiện lên RabbitMQ"
+
+DB_Tx -> Commit
+Commit -> Coordinator
+Coordinator -> RabbitMQ

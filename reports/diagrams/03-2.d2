@@ -1,0 +1,26 @@
+shape: sequence_diagram
+URLSvc: URL Service
+Outbox: Outbox
+RabbitMQ: RabbitMQ
+Analytics: Analytics Service
+PostgreSQL: PostgreSQL
+
+URLSvc -> Outbox: Insert URLClickedEvent (Transactional Outbox)
+Outbox -> RabbitMQ: Publish URLClickedEvent (routing: \"url.clicked\")
+RabbitMQ -> Analytics: Phân phối tới queue \"analytics.clicks\"
+Note over Analytics: Giải mã JSON & Kiểm tra tính hợp lệ dữ liệu
+Note over Analytics: Khởi tạo DATABASE TRANSACTION
+Analytics -> PostgreSQL: SELECT EXISTS trong processed_events (event_id)
+PostgreSQL -> Analytics: exists = false (Sự kiện chưa được xử lý)
+Analytics -> PostgreSQL: INSERT INTO processed_events (event_id)
+Analytics -> PostgreSQL: INSERT INTO clicks (short_code, clicked_at, ip_hash, ...)
+Note over Analytics: Logic kiểm tra mốc Click (CheckAndPublish)
+Analytics -> PostgreSQL: SELECT COUNT(*) FROM clicks WHERE short_code
+PostgreSQL -> Analytics: Trả về total_clicks (Ví dụ: 100)
+Analytics -> PostgreSQL: SELECT EXISTS trong milestones WHERE milestone=100
+PostgreSQL -> Analytics: exists = false (Mốc này chưa từng đạt được)
+Analytics -> PostgreSQL: INSERT INTO milestones (short_code, milestone=100)
+Analytics -> RabbitMQ: Publish MilestoneReachedEvent (routing: \"milestone.reached\")
+RabbitMQ -> Analytics: Nhận sự kiện & Định tuyến tới notifications.events queue
+Analytics -> PostgreSQL: COMMIT TRANSACTION
+Analytics -> RabbitMQ: Phản hồi ACK (Xóa tin nhắn khỏi queue analytics.clicks)

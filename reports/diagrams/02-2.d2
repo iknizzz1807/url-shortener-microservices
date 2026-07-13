@@ -1,0 +1,17 @@
+shape: sequence_diagram
+actor: Client
+participant: H
+participant: S
+participant: R
+participant: DB
+
+Client -> H: "GET /{code}"
+H -> S: "RedirectToURL(code, remoteAddr)"
+S -> R: "Get(code)"
+R -> S: "Trả về dữ liệu CachedURL"
+R -> S: "Trả về rỗng (fallback sang DB)"
+S -> DB: "FindByCode"
+DB -> S: "Trả về URLRecord"
+S -> R: "Ghi nhận cache đệm (fire-and-forget)"
+S -> H: "Thông tin RedirectInfo"
+H -> Client: "HTTP 308 Permanent Redirect (Về URL gốc)"

@@ -1,0 +1,33 @@
+direction: down
+
+Phase0: "Phase 0: Infrastructure (Parallel)" {
+    db: PostgreSQL Databases
+    red: Redis Cache
+    rab: RabbitMQ Broker
+}
+Phase1: "Phase 1: Microservices (Parallel)" {
+    svcs: "Microservices: URL, Analytics, User, Notification"
+}
+Phase2: "Phase 2: Gateway" {
+    gw: API Gateway
+}
+Phase3: "Phase 3: Frontend & Proxy" {
+    web: Frontend & Nginx Proxy
+}
+Phase4: "Phase 4: Monitoring (Independent)" {
+    mon: "Prometheus, Grafana, Loki, Promtail"
+}
+
+Phase0 -> Phase1: "Healthcheck Passes"
+Phase1 -> Phase2: "Healthcheck Passes"
+Phase2 -> Phase3: "Healthcheck Passes"
+Phase1 -> Phase4: {
+    style: {
+        stroke-dash: 2
+    }
+}
+Phase2 -> Phase4: {
+    style: {
+        stroke-dash: 2
+    }
+}

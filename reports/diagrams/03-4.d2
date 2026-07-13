@@ -1,0 +1,24 @@
+direction: up
+
+Producer: Producer
+RabbitMQ: RabbitMQ
+Consumer: Consumer (autoAck=false)
+Check: "Kiểm tra Event ID\nđã tồn tại trong DB?"
+AckDiscard: "Phản hồi ACK\n& Bỏ qua xử lý"
+Process: "Bắt đầu\nXử lý sự kiện"
+DBTx: Database Transaction
+Commit: Commit Transaction
+Ack: "Phản hồi ACK\ngửi Broker"
+Rollback: Rollback Transaction
+Nack: "Phản hồi NACK\n& Đưa lại Queue"
+
+Producer -> RabbitMQ
+RabbitMQ -> Consumer
+Consumer -> Check
+Check -> AckDiscard: Đã tồn tại
+Check -> Process: Chưa tồn tại
+Process -> DBTx
+DBTx -> Commit: Ghi dữ liệu thành công
+Commit -> Ack
+DBTx -> Rollback: Lỗi ghi dữ liệu
+Rollback -> Nack

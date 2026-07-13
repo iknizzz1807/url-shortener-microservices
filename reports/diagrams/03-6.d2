@@ -1,0 +1,27 @@
+direction: up
+
+Producers: Nguồn Phát Sự Kiện {
+  URLSvc: URL Service
+  URLSvcOutbox: URL Service (Outbox)
+  AnalyticsSvcPub: "Analytics Service\n(Publisher)"
+}
+
+Exchange: "url-shortener exchange\n(Topic Exchange)"
+
+Queues: Hàng Đợi RabbitMQ {
+  QueueClicks: "analytics.clicks queue\n(Durable)"
+  QueueEvents: "notifications.events queue\n(Durable)"
+}
+
+Consumers: Nguồn Tiêu Thụ Sự Kiện {
+  AnalyticsSvcCons: "Analytics Service\n(Consumer)"
+  NotificationSvcCons: "Notification Service\n(Consumer)"
+}
+
+URLSvc -> Exchange: "url.created\nurl.deleted"
+URLSvcOutbox -> Exchange: url.clicked
+AnalyticsSvcPub -> Exchange: milestone.reached
+Exchange -> QueueClicks: "routing:\nurl.clicked"
+Exchange -> QueueEvents: "routing: url.created,\nurl.deleted,\nmilestone.reached"
+QueueClicks -> AnalyticsSvcCons
+QueueEvents -> NotificationSvcCons

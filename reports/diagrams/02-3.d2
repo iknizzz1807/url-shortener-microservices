@@ -1,0 +1,23 @@
+direction: up
+
+"Vòng lặp quét dữ liệu - Định kỳ 2s": {
+  "Khởi động chu kỳ" -> "Thực hiện FetchUnpublished"
+  "Thực hiện FetchUnpublished" -> "Truy vấn CTE: SELECT FOR UPDATE SKIP LOCKED (Giới hạn 50)"
+  "Truy vấn CTE: SELECT FOR UPDATE SKIP LOCKED (Giới hạn 50)" -> "Cập nhật locked_until = hiện tại + 30s"
+  "Cập nhật locked_until = hiện tại + 30s" -> "Trả về tập bản ghi"
+  "Trả về tập bản ghi" -> "Đẩy bản ghi vào Jobs Channel"
+}
+
+"Worker Pool - Duy trì 3 Workers": {
+  "Jobs Channel (Hàng đợi đệm 50)" -> "Worker 1"
+  "Jobs Channel (Hàng đợi đệm 50)" -> "Worker 2"
+  "Jobs Channel (Hàng đợi đệm 50)" -> "Worker 3"
+  "Worker 1" -> "Publish sự kiện sang RabbitMQ"
+  "Worker 2" -> "Publish sự kiện sang RabbitMQ"
+  "Worker 3" -> "Publish sự kiện sang RabbitMQ"
+  "Publish sự kiện sang RabbitMQ" -> "Đánh dấu published_at trong DB"
+  "Publish sự kiện sang RabbitMQ" -> "Đánh dấu published_at trong DB"
+  "Publish sự kiện sang RabbitMQ" -> "Đánh dấu published_at trong DB"
+}
+
+"Đẩy bản ghi vào Jobs Channel" -> "Jobs Channel (Hàng đợi đệm 50)"

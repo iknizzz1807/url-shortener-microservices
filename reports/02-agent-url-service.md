@@ -118,12 +118,12 @@ Hệ thống thiết lập các chỉ mục để tối ưu hóa hiệu năng tr
 
 - **Quy tắc xác thực**: URL đầu vào bắt buộc phải phân tích cú pháp hợp lệ thông qua `net/url`, scheme phải là `http` hoặc `https` (phòng chống script độc hại), và phải có thông tin host.
 - **Ánh xạ lỗi HTTP**: Hệ thống định nghĩa các lỗi logic nội bộ và chuyển đổi sang HTTP Status tương ứng:
-  - `ErrInvalidURL` $\rightarrow$ 400 Bad Request
-  - `ErrAlreadyExists` $\rightarrow$ 409 Conflict (trùng lặp short code)
-  - `ErrNotFound` $\rightarrow$ 404 Not Found
-  - `ErrForbidden` $\rightarrow$ 403 Forbidden (sai chủ sở hữu)
-  - `ErrExpired` / `ErrDeactivated` $\rightarrow$ 410 Gone (hết hạn hoặc bị xóa)
-  - `ErrDatabaseError` $\rightarrow$ 500 Internal Server Error
+  - `ErrInvalidURL` → 400 Bad Request
+  - `ErrAlreadyExists` → 409 Conflict (trùng lặp short code)
+  - `ErrNotFound` → 404 Not Found
+  - `ErrForbidden` → 403 Forbidden (sai chủ sở hữu)
+  - `ErrExpired` / `ErrDeactivated` → 410 Gone (hết hạn hoặc bị xóa)
+  - `ErrDatabaseError` → 500 Internal Server Error
 
 ---
 
@@ -204,114 +204,15 @@ Quản lý khởi động và dọn dẹp hệ thống trong hàm main.
 
 ### 7.1. Quy trình rút gọn link (Shorten URL Flow)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client
-    participant H as HTTP Handler
-    participant S as URL Service
-    participant DB as PostgreSQL
-    participant R as Redis
-
-    Client->>H: POST /shorten {url, expires_in_hours}
-    H->>S: ValidateURL(url)
-    alt URL không hợp lệ
-        S-->>H: Trả về lỗi (400 Bad Request)
-        H-->>Client: Phản hồi lỗi
-    else URL hợp lệ
-        H->>S: ShortenURL()
-        loop Thử lại tối đa 3 lần
-            S->>S: Sinh Short Code ngẫu nhiên (crypto/rand + base62)
-            S->>DB: Mở Transaction
-            S->>DB: Chèn bản ghi URL (INSERT url)
-            S->>DB: Chèn bản ghi Outbox (INSERT outbox)
-            alt Lỗi trùng khóa (mã code đã tồn tại)
-                DB-->>S: Lỗi trùng lặp (Unique Violation 23505)
-                S->>DB: Rollback Transaction
-                Note over S: Ngủ (lần thử * 50ms) và thực hiện lại
-            else Thành công
-                S->>DB: Commit Transaction
-                Note over S: Thoát vòng lặp
-            end
-        end
-        alt Vượt quá số lần thử lại
-            S-->>H: Trả về lỗi (409 Conflict)
-            H-->>Client: Phản hồi lỗi
-        else Thành công
-            S->>R: Ghi nhận cache đệm (fire-and-forget)
-            S-->>H: Kết quả rút gọn
-            H-->>Client: HTTP 201 Created (Kèm short URL)
-        end
-    end
-```
+<img src="diagrams/02-1.png" alt="Shorten URL Flow">
 
 ### 7.2. Quy trình điều hướng (Redirect Flow)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client
-    participant H as HTTP Handler
-    participant S as URL Service
-    participant R as Redis
-    participant DB as PostgreSQL
-
-    Client->>H: GET /{code}
-    H->>S: RedirectToURL(code, remoteAddr)
-
-    rect rgb(240, 240, 240)
-        Note over S, R: Đọc từ L1 Cache (giới hạn timeout 50ms)
-        S->>R: Lệnh Get(code)
-        alt Cache HIT
-            R-->>S: Trả về dữ liệu CachedURL
-            Note over S: Kiểm tra trạng thái is_active & expires_at
-        else Cache MISS hoặc Lỗi kết nối Redis
-            R-->>S: Trả về rỗng (fallback sang DB)
-            S->>DB: Tìm kiếm theo mã (FindByCode)
-            DB-->>S: Trả về URLRecord
-            S->>R: Ghi nhận cache đệm (fire-and-forget)
-        end
-    end
-
-    alt Liên kết bị hủy kích hoạt hoặc hết hạn
-        S-->>H: Trả về lỗi (410 Gone)
-        H-->>Client: HTTP 410 Gone
-    else Liên kết hoạt động bình thường
-        S-->>H: Thông tin RedirectInfo
-        H->>H: Gọi writeAnalyticsEvent() (chạy ngầm goroutine)
-        Note over H: Lưu trữ sự kiện click chuột vào bảng Outbox
-        H-->>Client: HTTP 308 Permanent Redirect (Về URL gốc)
-    end
-```
+<img src="diagrams/02-2.png" alt="Redirect Flow">
 
 ### 7.3. Quy trình đồng bộ sự kiện (Outbox Processing Flow)
 
-```mermaid
-flowchart TD
-    subgraph Poller [Vòng lặp quét dữ liệu - Định kỳ 2s]
-        Start([Khởi động chu kỳ]) --> Fetch[Thực hiện FetchUnpublished]
-        Fetch --> CTE["Truy vấn CTE: SELECT FOR UPDATE SKIP LOCKED (Giới hạn 50)"]
-        CTE --> Lock["Cập nhật locked_until = hiện tại + 30s"]
-        Lock --> Ret["Trả về tập bản ghi"]
-        Ret --> SendCh["Đẩy bản ghi vào Jobs Channel"]
-    end
-
-    subgraph Workers [Worker Pool - Duy trì 3 Workers]
-        JobCh[("Jobs Channel (Hàng đợi đệm 50)")] --> W1[Worker 1]
-        JobCh --> W2[Worker 2]
-        JobCh --> W3[Worker 3]
-
-        W1 --> Pub1[Publish sự kiện sang RabbitMQ]
-        W2 --> Pub2[Publish sự kiện sang RabbitMQ]
-        W3 --> Pub3[Publish sự kiện sang RabbitMQ]
-
-        Pub1 --> Mark1[Đánh dấu published_at trong DB]
-        Pub2 --> Mark2[Đánh dấu published_at trong DB]
-        Pub3 --> Mark3[Đánh dấu published_at trong DB]
-    end
-
-    SendCh ~~~ JobCh
-```
+<img src="diagrams/02-3.png" alt="Outbox Processing Flow">
 
 ### 7.4. Đánh giá hiệu năng và độ trễ (Latency Estimation)
 
@@ -341,22 +242,7 @@ flowchart TD
 
 Mô hình thiết kế này đảm bảo tính nhất quán tuyệt đối giữa dữ liệu nghiệp vụ của liên kết và việc phát các sự kiện liên quan ra hệ thống microservices.
 
-```mermaid
-flowchart TD
-    subgraph DB_Tx [Database Transaction]
-        InsertURL["Ghi thông tin URL mới (INSERT urls)"]
-        InsertOutbox["Ghi sự kiện nghiệp vụ tạo mới (INSERT outbox)"]
-        InsertURL --- InsertOutbox
-    end
-
-    Commit([COMMIT Transaction])
-    Coordinator["OutboxCoordinator (Quét định kỳ 2s)"]
-    RabbitMQ["Đẩy sự kiện lên RabbitMQ"]
-
-    DB_Tx --> Commit
-    Commit --> Coordinator
-    Coordinator --> RabbitMQ
-```
+<img src="diagrams/02-4.png" alt="Transactional Outbox Model">
 
 - **Mục đích của băm IP (`hashIP`)**: Địa chỉ IP client được lọc bỏ cổng, sau đó băm một chiều SHA-256 kết hợp muối cấu hình nhằm mục tiêu đếm chính xác lượt click độc nhất (Unique clicks) mà không làm rò rỉ dữ liệu cá nhân hay vi phạm luật bảo mật thông tin (GDPR).
 

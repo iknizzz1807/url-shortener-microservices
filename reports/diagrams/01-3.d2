@@ -1,0 +1,7 @@
+direction: up
+
+"*" -> CLOSED
+CLOSED -> OPEN: "failures >= maxFailures (trong failureWindow)"
+OPEN -> HALF_OPEN: "openTimeout expired (next request arrives as probe)"
+HALF_OPEN -> CLOSED: "success (probe request succeeded)"
+HALF_OPEN -> OPEN: "failure (probe request failed, reset timer)"

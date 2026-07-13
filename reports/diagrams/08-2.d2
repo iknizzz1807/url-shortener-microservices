@@ -1,0 +1,25 @@
+direction: up
+
+Poller: OutboxCoordinator - Poll every 2s {
+    Tick -> CTE: CTE Query - FOR UPDATE SKIP LOCKED (batch_size=50)
+    CTE -> Lock: SET locked_until = now() + 30s
+}
+
+Chan: Push to jobs channel (buffered 50)
+
+Workers: 3 Workers - goroutine pool {
+    W1
+    W2
+    W3
+    Pub: Publish to RabbitMQ (mutex trên channel)
+    Mark: UPDATE published_at = now() - locked_until = NULL
+}
+
+Poller.Lock -> Chan
+Chan -> Workers.W1
+Chan -> Workers.W2
+Chan -> Workers.W3
+Workers.W1 -> Workers.Pub
+Workers.W2 -> Workers.Pub
+Workers.W3 -> Workers.Pub
+Workers.Pub -> Workers.Mark

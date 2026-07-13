@@ -1,0 +1,11 @@
+direction: left
+
+url_db -> url-service
+analytics_db -> analytics-service
+user_db -> user-service
+notification_db -> notification-service
+url-service -> gateway
+analytics-service -> gateway
+user-service -> gateway
+notification-service -> gateway
+gateway -> nginx

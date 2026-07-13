@@ -1,0 +1,12 @@
+direction: left
+Stages: Stages {
+    "20s -> 200 VUs" -> "20s -> 500 VUs"
+    "20s -> 500 VUs" -> "20s -> 1000 VUs"
+    "20s -> 1000 VUs" -> "60s hold at 1000 VUs"
+    "60s hold at 1000 VUs" -> "20s -> 0 VUs"
+}
+Thresholds: Thresholds {
+    "p(95) < 2000ms"
+    "error_rate < 95%"
+}
+Stages -> Thresholds

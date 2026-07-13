@@ -1,0 +1,23 @@
+shape: sequence_diagram
+actor: Client
+participant: H
+participant: S
+participant: DB
+participant: R
+
+Client -> H: "POST /shorten {url, expires_in_hours}"
+H -> S: "ValidateURL(url)"
+S -> H: "Trả về lỗi (400 Bad Request)"
+H -> Client: "Phản hồi lỗi"
+H -> S: "ShortenURL()"
+S -> S: "Sinh Short Code ngẫu nhiên (crypto/rand + base62)"
+S -> DB: "Mở Transaction"
+S -> DB: "Chèn bản ghi URL (INSERT url)"
+S -> DB: "Chèn bản ghi Outbox (INSERT outbox)"
+DB -> S: "Lỗi trùng lặp (Unique Violation 23505)"
+S -> DB: "Rollback Transaction"
+DB -> S: "Thành công"
+S -> DB: "Commit Transaction"
+S -> R: "Ghi nhận cache đệm (fire-and-forget)"
+S -> H: "Kết quả rút gọn"
+H -> Client: "HTTP 201 Created (Kèm short URL)"

@@ -1,0 +1,39 @@
+direction: up
+
+Client: "Client / Browser"
+Nginx: "Nginx Reverse Proxy"
+Frontend: "Frontend SPA\nVite + React"
+Gateway: "API Gateway\nGo 1.23 Port 8080"
+
+UserService: "User Service"
+URLService: "URL Service"
+NotificationService: "Notification Service"
+AnalyticsService: "Analytics Service"
+UserDB: "(PostgreSQL user_db Port 5434)"
+URLDB: "(PostgreSQL url_db Port 5432)"
+NotifDB: "(PostgreSQL notif_db Port 5435)"
+AnalyticsDB: "(PostgreSQL analytics_db Port 5433)"
+RedisCache: "(Redis Port 6379)"
+RabbitMQ: "RabbitMQ Topic Exchange"
+
+Client -> Nginx: "Port 80"
+Nginx -> Frontend: "Static Files Port 5173"
+Nginx -> Gateway: "/api/ or /r/"
+
+Gateway -> UserService: "HTTP Port 8083"
+Gateway -> URLService: "HTTP Port 8081"
+Gateway -> NotificationService: "HTTP Port 8084"
+Gateway -> AnalyticsService: "HTTP Port 8082"
+
+UserService -> UserDB
+URLService -> URLDB
+NotificationService -> NotifDB
+AnalyticsService -> AnalyticsDB
+
+Gateway -> RedisCache: "Rate Limiting"
+URLService -> RedisCache: "URL Cache"
+
+URLService -> RabbitMQ: "Publish Events"
+AnalyticsService -> RabbitMQ: "Publish Milestone"
+RabbitMQ -> AnalyticsService: Consume
+RabbitMQ -> NotificationService: Consume

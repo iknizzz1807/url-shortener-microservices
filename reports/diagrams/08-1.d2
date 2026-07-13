@@ -1,0 +1,20 @@
+shape: sequence_diagram
+actor: Attacker
+HTTP Handler: HTTP Handler
+User Store: User Store
+bcrypt: bcrypt
+
+Attacker -> HTTP Handler: 'POST /login {email, password}'
+HTTP Handler -> User Store: FindByEmail(email)
+
+note: Email does not exist
+User Store -> HTTP Handler: nil
+HTTP Handler -> bcrypt: 'Verify(password, dummyBcryptHash) cost 12'
+bcrypt -> HTTP Handler: ~200ms elapsed
+HTTP Handler -> Attacker: 401 Invalid Credentials
+
+note: Email exists
+User Store -> HTTP Handler: 'User {password_hash}'
+HTTP Handler -> bcrypt: 'Verify(password, realHash) cost 12'
+bcrypt -> HTTP Handler: ~200ms elapsed
+HTTP Handler -> Attacker: 401 / 200 + Token

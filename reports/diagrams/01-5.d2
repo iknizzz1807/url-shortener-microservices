@@ -1,0 +1,11 @@
+shape: sequence_diagram
+actor: Client
+participant: Gateway
+participant: URLSvc
+participant: Redis
+
+Client -> Gateway: "POST /api/shorten (Authorization: Bearer <token>)"
+Gateway -> URLSvc: "POST /shorten"
+URLSvc -> Redis: "Cache URL (async)"
+URLSvc -> Gateway: "201 Created (short_code, ...)"
+Gateway -> Client: "201 Created (short_code, ...)"

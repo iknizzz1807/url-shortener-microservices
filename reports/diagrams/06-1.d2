@@ -1,0 +1,113 @@
+direction: down
+
+classes: {
+    db: {
+        style: {
+            fill: "#85C1E9"
+            stroke: "#333"
+            stroke-width: 2
+        }
+    }
+    svc: {
+        style: {
+            fill: "#82E0AA"
+            stroke: "#333"
+            stroke-width: 2
+        }
+    }
+    broker: {
+        style: {
+            fill: "#F8C471"
+            stroke: "#333"
+            stroke-width: 2
+        }
+    }
+    monitor: {
+        style: {
+            fill: "#D7BDE2"
+            stroke: "#333"
+            stroke-width: 2
+        }
+    }
+}
+
+Client: Internet
+Nginx: Nginx Reverse Proxy
+Gateway: "API Gateway:8080"
+Frontend: "Frontend:5173"
+URLS: "URL Service:8081"
+AnalyticsS: "Analytics Service:8082"
+UserS: "User Service:8083"
+NotificationS: "Notification Service:8084"
+URL_DB: url_db
+Analytics_DB: analytics_db
+User_DB: user_db
+Notification_DB: notification_db
+Redis: Redis Cache
+RabbitMQ: RabbitMQ Broker
+Prometheus: Prometheus
+Grafana: Grafana
+Loki: Loki
+Promtail: Promtail
+DockerLogs: "Docker Logs"
+
+URLS.class: svc
+AnalyticsS.class: svc
+UserS.class: svc
+NotificationS.class: svc
+URL_DB.class: db
+Analytics_DB.class: db
+User_DB.class: db
+Notification_DB.class: db
+Redis.class: db
+RabbitMQ.class: broker
+Prometheus.class: monitor
+Grafana.class: monitor
+Loki.class: monitor
+Promtail.class: monitor
+
+Client -> Nginx
+Nginx -> Gateway: "/api/, /r/, /health"
+Nginx -> Frontend: "/"
+Gateway -> URLS: HTTP
+Gateway -> AnalyticsS: HTTP
+Gateway -> UserS: HTTP
+Gateway -> NotificationS: HTTP
+URLS -> URL_DB
+AnalyticsS -> Analytics_DB
+UserS -> User_DB
+NotificationS -> Notification_DB
+URLS -> Redis: {
+    style: {
+        stroke-dash: 2
+    }
+}
+Gateway -> Redis: {
+    style: {
+        stroke-dash: 2
+    }
+}
+URLS -> RabbitMQ: {
+    style: {
+        stroke-dash: 2
+    }
+}
+AnalyticsS -> RabbitMQ: {
+    style: {
+        stroke-dash: 2
+    }
+}
+NotificationS -> RabbitMQ: {
+    style: {
+        stroke-dash: 2
+    }
+}
+Prometheus -> Gateway: "Scrape /metrics"
+Prometheus -> URLS: "Scrape /metrics"
+Prometheus -> AnalyticsS: "Scrape /metrics"
+Prometheus -> UserS: "Scrape /metrics"
+Prometheus -> NotificationS: "Scrape /metrics"
+Grafana -> Prometheus: Query
+Grafana -> Loki: Query
+Promtail -> Loki: "Push Logs"
+DockerLogs -> Promtail

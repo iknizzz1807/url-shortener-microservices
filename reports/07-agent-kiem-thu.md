@@ -24,14 +24,7 @@
 
 ### Pattern chung
 
-```mermaid
-flowchart LR
-    A[Define test cases struct] --> B[Loop over cases]
-    B --> C[t.Run subtest]
-    C --> D[Arrange mocks]
-    D --> E[Call SUT]
-    E --> F[Assert status / JSON / side-effect flags]
-```
+<img src="diagrams/07-1.png" alt="Table-driven test pattern">
 
 ---
 
@@ -75,29 +68,7 @@ services/notification-service/errors.go → writeError helper
 
 ### Flow 11 bước
 
-```mermaid
-sequenceDiagram
-    participant T as Test Script
-    participant G as Gateway
-    participant US as url-service
-    participant AS as analytics-service
-    participant NS as notification-service
-    T->>G: 1. POST /api/auth/register
-    T->>G: 2. POST /api/auth/login → get TOKEN
-    T->>G: 3. POST /api/shorten (with TOKEN) → SHORT_CODE
-    loop 15 lần
-        T->>G: 4. GET /r/{SHORT_CODE}
-    end
-    Note over T,US: 5. sleep 5s (đợi outbox + consumer)
-    T->>AS: 6. GET /api/stats/{SHORT_CODE} → assert total_clicks ≥ 15
-    T->>NS: 7. GET /api/notifications → assert milestone.reached
-    T->>G: 8. DELETE /api/urls/{SHORT_CODE} → 204
-    T->>G: 9. GET /r/{SHORT_CODE} → 410 Gone
-    loop 11 lần
-        T->>G: 10. POST /api/shorten → eventually 429
-    end
-    T->>G: 11. GET /health → assert X-Correlation-ID header
-```
+<img src="diagrams/07-2.png" alt="E2E test flow">
 
 ### Bước kiểm thử chi tiết
 
@@ -123,21 +94,7 @@ sequenceDiagram
 
 ### Scenario 1 — Ramping VUs (`load_test.js`)
 
-```mermaid
-flowchart LR
-    subgraph Stages
-        A["20s → 200 VUs"] --> B["20s → 500 VUs"]
-        B --> C["20s → 1000 VUs"]
-        C --> D["60s hold at 1000 VUs"]
-        D --> E["20s → 0 VUs"]
-    end
-    subgraph Thresholds
-        F["p(95) < 2000ms"]
-        G["error_rate < 95%"]
-    end
-    Stages --> F
-    Stages --> G
-```
+<img src="diagrams/07-3.png" alt="k6 load test flow">
 
 | Stage | Duration | Target VUs | Mục đích |
 |---|---|---|---|

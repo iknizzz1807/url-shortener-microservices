@@ -70,45 +70,7 @@ Dự án URL Shortener Microservices sử dụng kiến trúc microservices vớ
 
 Kiến trúc triển khai tổng thể được biểu diễn như sơ đồ dưới đây:
 
-```mermaid
-graph TD
-    classDef db fill:#85C1E9,stroke:#333,stroke-width:2px;
-    classDef svc fill:#82E0AA,stroke:#333,stroke-width:2px;
-    classDef broker fill:#F8C471,stroke:#333,stroke-width:2px;
-    classDef monitor fill:#D7BDE2,stroke:#333,stroke-width:2px;
-
-    Client[Internet] --> Nginx[Nginx Reverse Proxy]
-    Nginx -->|Port 80: /api, /r, /health| Gateway[API Gateway:8080]
-    Nginx -->|Port 80: /| Frontend[Frontend:5173]
-
-    Gateway -->|HTTP| URLS[URL Service:8081]:::svc
-    Gateway -->|HTTP| AnalyticsS[Analytics Service:8082]:::svc
-    Gateway -->|HTTP| UserS[User Service:8083]:::svc
-    Gateway -->|HTTP| NotificationS[Notification Service:8084]:::svc
-
-    URLS --> URL_DB[(url_db)]:::db
-    AnalyticsS --> Analytics_DB[(analytics_db)]:::db
-    UserS --> User_DB[(user_db)]:::db
-    NotificationS --> Notification_DB[(notification_db)]:::db
-
-    URLS -.-> Redis[(Redis Cache)]:::db
-    Gateway -.-> Redis
-
-    URLS -.-> RabbitMQ{RabbitMQ Broker}:::broker
-    AnalyticsS -.-> RabbitMQ
-    NotificationS -.-> RabbitMQ
-
-    Prometheus[Prometheus]:::monitor -->|Scrape /metrics| Gateway
-    Prometheus -->|Scrape /metrics| URLS
-    Prometheus -->|Scrape /metrics| AnalyticsS
-    Prometheus -->|Scrape /metrics| UserS
-    Prometheus -->|Scrape /metrics| NotificationS
-
-    Grafana[Grafana]:::monitor -->|Query| Prometheus
-    Grafana -->|Query| Loki[Loki]:::monitor
-    Promtail[Promtail]:::monitor -->|Push Logs| Loki
-    DockerLogs[(Docker Logs)] --> Promtail
-```
+<img src="diagrams/06-1.png" alt="Container dependency graph">
 
 Mỗi microservice có cơ sở dữ liệu riêng (database-per-service pattern), giao tiếp đồng bộ qua HTTP (qua gateway) và bất đồng bộ qua RabbitMQ (message queue pattern). Redis đóng vai trò cache cho URL shortener. Gateway đóng vai trò API gateway duy nhất, chịu trách nhiệm xác thực JWT, rate limiting, circuit breaker, và thu thập metrics.
 
@@ -147,7 +109,7 @@ Dưới đây là bảng tổng hợp danh sách các container, image tương �
 
 - **Volumes & Mounts:** Định nghĩa 8 named volumes cho việc lưu trữ dữ liệu (DBs, RabbitMQ, Redis, Prometheus, Grafana). Sử dụng bind mounts ở chế độ chỉ đọc (`ro`) cho các file cấu hình (`nginx.conf`, `prometheus.yml`, `loki-config.yml`, `promtail-config.yml`) và Docker socket (`/var/run/docker.sock` cho Promtail).
 - **Ràng Buộc Khởi Động:** Thứ tự khởi động sử dụng điều kiện `service_healthy`: 
-  Databases/Cache/Broker (Phase 0) $\rightarrow$ Microservices (Phase 1) $\rightarrow$ Gateway (Phase 2) $\rightarrow$ Frontend/Nginx (Phase 3).
+  Databases/Cache/Broker (Phase 0) → Microservices (Phase 1) → Gateway (Phase 2) → Frontend/Nginx (Phase 3).
 - **Biến Môi Trường:**
   - *Databases/Broker:* Cấu hình thông tin đăng nhập mặc định (`guest/guest` cho RabbitMQ, `admin/admin` cho Grafana, credentials riêng cho từng PostgreSQL).
   - *Go Services & Gateway:* Nhận cấu hình kết nối qua `DATABASE_URL`, `REDIS_URL`, `RABBITMQ_URL` và các cấu hình bảo mật `JWT_SECRET`, `IP_HASH_SALT`.
@@ -379,101 +341,13 @@ Log được hiển thị trực tiếp trong dashboard tổng quan của Grafan
 
 Quan hệ phụ thuộc giữa các thành phần được thể hiện qua sơ đồ kiến trúc dưới đây:
 
-```mermaid
-graph TD
-    classDef db fill:#85C1E9,stroke:#2C3E50,stroke-width:2px;
-    classDef svc fill:#82E0AA,stroke:#2C3E50,stroke-width:2px;
-    classDef monitor fill:#D7BDE2,stroke:#2C3E50,stroke-width:2px;
-
-    %% Level 0: Databases
-    url_db[(url_db)]:::db
-    analytics_db[(analytics_db)]:::db
-    user_db[(user_db)]:::db
-    notification_db[(notification_db)]:::db
-    redis[(redis)]:::db
-    rabbitmq[(rabbitmq)]:::db
-
-    %% Level 1: Microservices
-    url-service[url-service]:::svc
-    analytics-service[analytics-service]:::svc
-    user-service[user-service]:::svc
-    notification-service[notification-service]:::svc
-
-    %% Level 2: Gateway
-    gateway[gateway]:::svc
-
-    %% Level 3: Frontend & Proxy
-    nginx[nginx]
-    frontend[frontend]
-
-    %% Level 4: Monitoring
-    prometheus[prometheus]:::monitor
-    grafana[grafana]:::monitor
-    loki[loki]:::monitor
-    promtail[promtail]:::monitor
-
-    %% Dependencies
-    url-service --> url_db
-    url-service --> redis
-    url-service --> rabbitmq
-
-    analytics-service --> analytics_db
-    analytics-service --> rabbitmq
-
-    user-service --> user_db
-
-    notification-service --> notification_db
-    notification-service --> rabbitmq
-
-    gateway --> url-service
-    gateway --> analytics-service
-    gateway --> user-service
-    gateway --> notification-service
-
-    nginx --> gateway
-    nginx --> frontend
-    frontend --> gateway
-
-    prometheus --> gateway
-    grafana --> prometheus
-    grafana --> loki
-    promtail --> loki
-```
+<img src="diagrams/06-2.png" alt="Dependency tree">
 
 ### 9.2. Startup Order
 
 Trình tự khởi động tuần tự qua các giai đoạn được biểu diễn như sau:
 
-```mermaid
-flowchart TD
-    subgraph Phase0 ["Phase 0: Infrastructure (Parallel)"]
-        db[PostgreSQL Databases]
-        red[Redis Cache]
-        rab[RabbitMQ Broker]
-    end
-
-    subgraph Phase1 ["Phase 1: Microservices (Parallel)"]
-        svcs[Microservices: URL, Analytics, User, Notification]
-    end
-
-    subgraph Phase2 ["Phase 2: Gateway"]
-        gw[API Gateway]
-    end
-
-    subgraph Phase3 ["Phase 3: Frontend & Proxy"]
-        web[Frontend & Nginx Proxy]
-    end
-
-    subgraph Phase4 ["Phase 4: Monitoring (Independent)"]
-        mon[Prometheus, Grafana, Loki, Promtail]
-    end
-
-    Phase0 -->|Healthcheck Passes| Phase1
-    Phase1 -->|Healthcheck Passes| Phase2
-    Phase2 -->|Healthcheck Passes| Phase3
-    Phase1 -.-> Phase4
-    Phase2 -.-> Phase4
-```
+<img src="diagrams/06-3.png" alt="Startup order">
 
 ### 9.3. Critical Path Analysis
 

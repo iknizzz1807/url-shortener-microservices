@@ -166,17 +166,7 @@ Upstream service (vd: url-service) gặp sự cố → Gateway tiếp tục forw
 
 ### State Diagram
 
-```mermaid
-stateDiagram-v2
-    [*] --> CLOSED
-
-    CLOSED --> OPEN : 5 failures trong 10s
-    
-    OPEN --> HALF_OPEN : Sau 30s, request đầu tiên vào
-    
-    HALF_OPEN --> CLOSED : Probe success
-    HALF_OPEN --> OPEN : Probe fail (reset timer)
-```
+<img src="diagrams/04-1.png" alt="Circuit breaker state machine">
 
 ### Chi Tiết Implementation
 
@@ -301,36 +291,7 @@ func JWTMiddleware(secret string) func(http.Handler) http.Handler {
 
 ### Luồng JWT Middleware
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Client
-    participant G as API Gateway
-    participant JWT as JWT Middleware
-    participant Upstream as Upstream Service
-
-    Client->>G: POST /api/shorten (Authorization: Bearer <token>)
-
-    rect rgb(255, 240, 240)
-        Note over G,JWT: JWT Middleware
-        G->>JWT: Extract Bearer token
-        JWT->>JWT: VerifyToken(token, secret)
-        alt Token hợp lệ
-            JWT->>JWT: Inject Claims vào context
-            JWT-->>G: Pass (context với claims)
-            G->>Upstream: Forward request (context mang claims)
-            Upstream->>Upstream: ClaimsFromContext(ctx) → user_id, email
-            Upstream-->>G: 200 OK response
-            G-->>Client: 200 OK
-        else Token hết hạn / sai signature
-            JWT-->>G: 401 Unauthorized
-            G-->>Client: {"error": "unauthorized"}
-        else Không có Authorization header
-            JWT-->>G: 401 Unauthorized
-            G-->>Client: {"error": "authorization header required"}
-        end
-    end
-```
+<img src="diagrams/04-2.png" alt="JWT auth flow sequence diagram">
 
 ### Dual Verification (Defense in Depth)
 
